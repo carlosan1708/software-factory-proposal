@@ -43,3 +43,10 @@ Regenerate both PDFs after editing the page. The export script uses Python Playw
 python scripts/export_pdfs.py
 firebase deploy --only hosting --project software-factory-proposal
 ```
+
+## Inspiration and learning
+
+Microsoft’s article informed my choice to isolate each coding task in its own sandbox. ZazenCodes’ walkthrough helped me learn how to build a software factory around Claude Code.
+
+- Microsoft Community Hub · [Azure Container Apps Sandboxes, Now Generally Available](https://techcommunity.microsoft.com/blog/appsonazureblog/azure-container-apps-sandboxes-now-generally-available/4559125)
+- ZazenCodes on YouTube · [Build Your Own AI Software Factory with Claude Code](https://www.youtube.com/watch?v=ctoaIC4LHmI)

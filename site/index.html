@@ -461,6 +461,10 @@
       .drivers p {
         color: var(--soft);
       }
+      .references { break-inside: avoid; }
+      .references p { margin: 10px 0; }
+      .references ul { padding-left: 1.25em; }
+      .references li + li { margin-top: 5px; }
       footer {
         padding: 18px 0 32px;
         color: var(--soft);
@@ -1229,6 +1233,7 @@
         font-size: 0.85rem;
       }
       .author a,
+      .references a,
       .opening-links a {
         color: var(--ink);
         font-weight: 650;
@@ -1908,6 +1913,8 @@
       }
       @media print {
         @page { size: A4; margin: 14mm 15mm 17mm; }
+        .references { padding-block: 10px; break-after: avoid-page; }
+        footer { padding-block: 6px 0; }
         .pdf-downloads, .opening-links, .proposal-search, .skip { display: none !important; }
         :root { font-size: 13px; background: white; }
         body { background: white; color: #111; line-height: 1.38; }
@@ -3945,6 +3952,14 @@ target   screening-desk-prod</code></pre>
             </details>
           </div>
         </section>
+      </section>
+      <section id="references" class="section references" aria-labelledby="references-title">
+        <h2 id="references-title">Inspiration and learning</h2>
+        <p>Microsoft’s article informed my choice to isolate each coding task in its own sandbox. ZazenCodes’ walkthrough helped me learn how to build a software factory around Claude Code.</p>
+        <ul>
+          <li>Microsoft Community Hub · <a href="https://techcommunity.microsoft.com/blog/appsonazureblog/azure-container-apps-sandboxes-now-generally-available/4559125">Azure Container Apps Sandboxes, Now Generally Available</a></li>
+          <li>ZazenCodes on YouTube · <a href="https://www.youtube.com/watch?v=ctoaIC4LHmI">Build Your Own AI Software Factory with Claude Code</a></li>
+        </ul>
       </section>
     </main>
     <footer class="shell">Software Factory on Azure · <a href="https://github.com/carlosan1708/software-factory-proposal">Source repository</a></footer>

@@ -129,6 +129,8 @@ Use the palette below for the presentation and its diagrams.
 
 Use bold system sans-serif headlines, regular sentence-case labels and generous space between sections. Start the flow on the first screen. Give the diagram more space than its introduction. Put dark text beside orange marks on the light canvas. In print, line styles and labels carry the paths and milestone without color. Place “Proposed factory · fictional example” once near the opening.
 
+Close both modes and their print editions with a shared Inspiration and learning section. Credit Microsoft’s Azure Container Apps Sandboxes article and ZazenCodes’ Claude Code walkthrough and link directly to both sources.
+
 ## Acceptance for the HTML revision
 
 - Choose Executive or Technical at the top and read the selected mode using only scroll. Keep the reading-mode switch and scenario selector outside the animated scene. Provide Previous, Next, Pause/Resume and Restart as native playback controls. Offer both Executive and Technical PDF links in the header in either reading mode. Generate searchable static PDFs from the same HTML with all four numbered scenario transcripts. Set connector names and descriptions as plain diagram labels in a definition list. Name the active connector beside its unboxed icon in the animated flow. Keep descriptions readable on mobile and in print. Show the content of each mode without additional interactions.
