@@ -1,0 +1,28 @@
+{
+  "hosting": {
+    "public": "site",
+    "headers": [
+      {
+        "source": "/downloads/*.pdf",
+        "headers": [
+          { "key": "Content-Disposition", "value": "attachment" },
+          { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
+        ]
+      }
+    ],
+    "ignore": [
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/technical",
+        "destination": "/index.html"
+      },
+      {
+        "source": "/technical/",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}

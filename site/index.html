@@ -1,0 +1,4369 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f4f3eb" />
+    <meta
+      name="description"
+      content="An executive and technical guide to a proposed Azure software factory, from a scoped repair to a verified release."
+    />
+    <link rel="icon" href="data:," />
+    <title>Software Factory on Azure</title>
+    <style>
+      :root {
+        --paper: #f4f3eb;
+        --ink: #0f0f0f;
+        --orange: #ff2b00;
+        --rule: #d0d3d4;
+        --soft: #55564f;
+        --mono: ui-monospace, Consolas, "Liberation Mono", monospace;
+        color-scheme: light;
+        font:
+          100%/1.5 Arial,
+          Helvetica,
+          sans-serif;
+        color: var(--ink);
+        background: var(--paper);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body,
+      h1,
+      h2,
+      h3,
+      h4,
+      p,
+      ol,
+      ul,
+      figure,
+      fieldset {
+        margin: 0;
+      }
+      body {
+        overflow-wrap: break-word;
+      }
+      html {
+        scroll-padding-top: 12px;
+      }
+      .shell {
+        width: min(1200px, calc(100% - 96px));
+        margin-inline: auto;
+      }
+      header {
+        position: relative;
+        z-index: 5;
+        background: var(--paper);
+        border-bottom: 1px solid var(--ink);
+      }
+      .mast {
+        min-height: 76px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+      .wordmark {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 1.26rem;
+        font-weight: 750;
+        letter-spacing: -0.045em;
+      }
+      .mark {
+        width: 29px;
+        height: 31px;
+        display: inline-block;
+        background: var(--orange);
+        clip-path: polygon(
+          0 28%,
+          100% 0,
+          100% 20%,
+          22% 42%,
+          22% 53%,
+          82% 36%,
+          82% 57%,
+          22% 74%,
+          22% 94%,
+          0 100%
+        );
+      }
+      .modes {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      .tag,
+      .label,
+      .axis,
+      .when {
+        font: 600 0.76rem/1.45 var(--mono);
+        letter-spacing: 0.055em;
+      }
+      .tag,
+      .label {
+        text-transform: uppercase;
+      }
+      .modes fieldset {
+        border: 1px solid var(--ink);
+        padding: 3px;
+        display: flex;
+        border-radius: 5px;
+        gap: 2px;
+      }
+      .modes label {
+        position: relative;
+        cursor: pointer;
+      }
+      .mode-time { display: none; }
+      .modes span.opt {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        padding: 8px 15px;
+        font-weight: 700;
+        font-size: 0.96rem;
+        border-radius: 2px;
+      }
+      .modes input:checked + span {
+        background: var(--ink);
+        color: var(--paper);
+      }
+      .modes input:checked + span:before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--orange);
+      }
+      .modes input:focus-visible + span {
+        outline: 3px solid #006891;
+        outline-offset: 3px;
+      }
+      .skip:focus-visible,
+      a:focus-visible {
+        outline: 3px solid #006891;
+        outline-offset: 4px;
+      }
+      .sr,
+      .modes input,
+      .skip:not(:focus) {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        clip-path: inset(50%);
+        overflow: hidden;
+        white-space: nowrap;
+      }
+      .skip:focus {
+        position: fixed;
+        top: 12px;
+        left: 12px;
+        z-index: 9;
+        background: var(--paper);
+        color: var(--ink);
+        padding: 8px;
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        line-height: 1.05;
+        letter-spacing: -0.05em;
+        text-wrap: balance;
+      }
+      h1 {
+        font-size: clamp(3.1rem, 5.5vw, 5.65rem);
+        font-weight: 750;
+        max-width: 17ch;
+        line-height: 0.99;
+      }
+      h2 {
+        font-size: clamp(2rem, 3.6vw, 3.45rem);
+        font-weight: 720;
+      }
+      h3 {
+        font-size: 1.2rem;
+        letter-spacing: -0.03em;
+        line-height: 1.22;
+      }
+      p {
+        max-width: 74ch;
+      }
+      .tech {
+        display: none;
+      }
+      body:has(#technical:checked) .tech {
+        display: block;
+      }
+      body:has(#technical:checked) .exec {
+        display: none;
+      }
+      .tech p + p {
+        margin-top: 0.6em;
+      }
+      .hero {
+        display: grid;
+        grid-template-columns: 1.4fr 1fr;
+        gap: 48px;
+        align-items: center;
+        padding: clamp(28px, 4.4vw, 62px) 0 30px;
+      }
+      .tag {
+        display: flex;
+        gap: 9px;
+        align-items: center;
+        color: var(--soft);
+        margin-bottom: 16px;
+      }
+      .tag:before {
+        content: "";
+        width: 22px;
+        height: 3px;
+        background: var(--orange);
+      }
+      .hero .intro {
+        font-size: clamp(1rem, 1.5vw, 1.23rem);
+        margin-top: 17px;
+        max-width: 53ch;
+      }
+      .detail {
+        margin-top: 14px;
+        border-left: 3px solid var(--orange);
+        padding: 3px 0 3px 16px;
+      }
+      .section {
+        padding-block: clamp(32px, 5vw, 66px);
+        border-bottom: 1px solid #a8a99f;
+      }
+      .section-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 24px;
+        margin-bottom: 23px;
+      }
+      .section-intro {
+        color: var(--soft);
+        max-width: 50ch;
+      }
+      .people {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+      }
+      .people th,
+      .people td {
+        padding: 10px 13px 10px 0;
+        text-align: left;
+        vertical-align: top;
+        border-bottom: 1px solid var(--rule);
+      }
+      .people thead th {
+        font: 600 0.78rem/1.5 var(--mono);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--soft);
+        border-top: 1px solid var(--ink);
+        border-bottom: 1px solid var(--ink);
+      }
+      .people th:first-child {
+        width: 25%;
+      }
+      .people td:nth-child(2) {
+        width: 39%;
+      }
+      .people tbody th {
+        font-weight: 700;
+      }
+      .smallnote {
+        font-size: 0.94rem;
+        color: var(--soft);
+        margin-top: 14px;
+      }
+      .annotations,
+      .deep-grid,
+      .drivers {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 22px;
+        margin-top: 20px;
+      }
+      .annotations p,
+      .drivers p {
+        font-size: 0.97rem;
+      }
+      .deep-grid p,
+      .detail p {
+        margin-top: 0.4rem;
+      }
+      .detail {
+        max-width: 82ch;
+      }
+      .guards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        margin-top: 20px;
+        border-top: 1px solid var(--ink);
+      }
+      .guard {
+        padding: 15px 20px 0 0;
+      }
+      .guard h3 {
+        font-size: 1rem;
+      }
+      .guard p {
+        font-size: 0.95rem;
+        margin-top: 0.5rem;
+      }
+      .comparison { margin: 20px 0; }
+      .comparison dl {
+        display: grid;
+        grid-auto-flow: column;
+        grid-auto-columns: minmax(0, 1fr);
+        gap: 8px 24px;
+        margin: 8px 0;
+      }
+      .comparison dl > div { border-top: 1px solid var(--rule); padding-top: 8px; }
+      .comparison dt { font-weight: 700; }
+      .comparison dd { margin: 3px 0 0; }
+      @media screen and (max-width: 650px) {
+        .comparison dl { grid-auto-flow: row; }
+      }
+      .ops {
+        display: grid;
+        grid-template-columns: 0.96fr 1.04fr;
+        gap: 5vw;
+      }
+      .ops h2 {
+        font-size: clamp(1.8rem, 3vw, 2.6rem);
+        margin-bottom: 20px;
+      }
+      .list {
+        list-style: none;
+        padding: 0;
+      }
+      .list li {
+        border-top: 1px solid var(--rule);
+        padding: 0.65rem 0;
+        display: grid;
+        grid-template-columns: minmax(80px, 0.6fr) 1.4fr;
+        gap: 12px;
+      }
+      .list b {
+        letter-spacing: -0.025em;
+      }
+      .chart {
+        --name: clamp(160px, 25%, 275px);
+        border-top: 1px solid var(--ink);
+      }
+      .chart-row {
+        display: grid;
+        grid-template-columns: var(--name) minmax(0, 1fr);
+        align-items: center;
+        gap: 16px;
+        padding: 11px 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .chart-row.extension {
+        border-top: 2px solid var(--ink);
+        align-items: start;
+      }
+      .extension-weeks {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+        list-style: none;
+        margin: 12px 0;
+        padding: 0;
+      }
+      .extension-weeks li {
+        border-top: 2px solid var(--ink);
+        padding-top: 5px;
+        font-size: 0.88rem;
+      }
+      .extension-weeks b { display: block; }
+      .chart-row h3 {
+        font-size: 1rem;
+      }
+      .when {
+        display: block;
+        color: var(--soft);
+        letter-spacing: 0;
+        font-weight: 400;
+        margin-top: 3px;
+      }
+      .axis,
+      .track {
+        display: grid;
+        grid-template-columns: repeat(12, minmax(0, 1fr));
+      }
+      .axis {
+        color: var(--soft);
+        letter-spacing: 0;
+        font-size: 0.73rem;
+      }
+      .axis span {
+        white-space: nowrap;
+      }
+      .track {
+        height: 22px;
+        align-items: center;
+        background: repeating-linear-gradient(
+          to right,
+          #cdcfc5 0 1px,
+          transparent 1px 8.33333%
+        );
+      }
+      .bar {
+        height: 11px;
+        background: var(--ink);
+        display: block;
+      }
+      .beta {
+        background: var(--orange);
+        clip-path: polygon(0 0, 94% 0, 100% 50%, 94% 100%, 0 100%);
+      }
+      .after {
+        border-left: 4px double var(--ink);
+        padding-left: 14px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 0.94rem;
+      }
+      .after i {
+        display: block;
+        position: relative;
+        width: 14%;
+        min-width: 45px;
+        border-top: 2px solid var(--ink);
+      }
+      .after i:after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: -5px;
+        background: var(--ink);
+        width: 8px;
+        height: 8px;
+        transform: rotate(45deg);
+      }
+      .drivers strong {
+        display: block;
+        margin-bottom: 4px;
+      }
+      .drivers p {
+        color: var(--soft);
+      }
+      footer {
+        padding: 18px 0 32px;
+        color: var(--soft);
+        font-size: 0.83rem;
+      }
+      @media (max-width: 920px) {
+        .shell {
+          width: calc(100% - 48px);
+        }
+        .hero {
+          gap: 24px;
+        }
+        .section-head {
+          display: block;
+        }
+        .section-intro {
+          margin-top: 8px;
+        }
+      }
+      @media (max-width: 650px) {
+        .shell {
+          width: calc(100% - 32px);
+        }
+        .mast {
+          min-height: 65px;
+          gap: 8px;
+        }
+        .wordmark {
+          font-size: 1rem;
+          gap: 6px;
+        }
+        .mark {
+          width: 20px;
+          height: 24px;
+        }
+        .modes span.opt {
+          padding: 9px 8px;
+          gap: 5px;
+          font-size: 0.86rem;
+        }
+        .modes input:checked + span:before {
+          width: 5px;
+          height: 5px;
+        }
+        .hero {
+          grid-template-columns: 1fr;
+          gap: 15px;
+          padding: 26px 0 18px;
+        }
+        h1 {
+          font-size: clamp(2.75rem, 10.8vw, 4.4rem);
+        }
+        .tag {
+          margin-bottom: 10px;
+          font-size: 0.69rem;
+        }
+        .hero .intro {
+          margin-top: 10px;
+        }
+        .section {
+          padding-block: 32px;
+        }
+        .section-head {
+          margin-bottom: 15px;
+        }
+        .people,
+        .people tbody,
+        .people tr,
+        .people td,
+        .people tbody th {
+          display: block;
+          width: auto !important;
+        }
+        .people thead {
+          position: absolute;
+          clip-path: inset(50%);
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+        }
+        .people tbody tr {
+          border-top: 1px solid var(--rule);
+          padding: 9px 0;
+        }
+        .people tbody th,
+        .people td {
+          border: 0;
+          padding: 1px 0;
+        }
+        .people td:before {
+          content: attr(data-label) " · ";
+          color: var(--soft);
+          font-size: 0.86rem;
+        }
+        .guards,
+        .ops,
+        .deep-grid,
+        .annotations,
+        .drivers {
+          grid-template-columns: 1fr;
+        }
+        .guards {
+          gap: 0;
+        }
+        .guard {
+          padding: 12px 0;
+          border-bottom: 1px solid var(--rule);
+        }
+        .ops {
+          gap: 28px;
+        }
+        .chart-row {
+          grid-template-columns: 1fr;
+          gap: 6px;
+          padding: 10px 0;
+        }
+        .chart-row:first-child {
+          padding-bottom: 5px;
+        }
+        .track {
+          height: 15px;
+        }
+        .axis {
+          font-size: 0.69rem;
+        }
+        .after {
+          padding: 7px;
+        }
+        .drivers,
+        .annotations,
+        .deep-grid {
+          gap: 12px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        *,
+        *:before,
+        *:after {
+          animation: none !important;
+          scroll-behavior: auto !important;
+        }
+      }
+      @media print {
+        @page {
+          margin: 12mm;
+        }
+        header {
+          position: static;
+        }
+        .mast {
+          min-height: 32px;
+        }
+        .shell {
+          width: 100%;
+        }
+        .modes legend,
+        .modes label:has(input:not(:checked)),
+        .skip {
+          display: none;
+        }
+        .modes fieldset {
+          border: 0;
+        }
+        body {
+          font-size: 10pt;
+        }
+        h1 {
+          font-size: 32pt;
+        }
+        h2 {
+          font-size: 22pt;
+        }
+        .hero {
+          padding: 14px 0;
+          grid-template-columns: 1.3fr 1fr;
+        }
+        .bar,
+        .mark,
+        .modes,
+        .beta,
+        .after {
+          print-color-adjust: exact;
+        }
+        .section {
+          padding: 18px 0;
+        }
+        .section-head {
+          margin-bottom: 8px;
+        }
+        .guard,
+        .chart-row,
+        tr,
+        .list li {
+          break-inside: avoid;
+        }
+        h2,
+        h3 {
+          break-after: avoid;
+        }
+        .ops,
+        .guards {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+        }
+        .modes input:checked + span {
+          color: black;
+          background: white;
+        }
+      }
+
+      .anchor {
+        display: block;
+        height: 0;
+      }
+      @media print {
+        .section-head,
+        .hero {
+          break-inside: avoid;
+        }
+        .chart {
+          break-inside: avoid;
+        }
+      }
+
+      .technical-section {
+        margin-top: 30px;
+        padding-top: 22px;
+        border-top: 1px solid var(--rule);
+      }
+      .technical-section > h3 {
+        font-size: clamp(1.4rem, 2.4vw, 2rem);
+      }
+      .architecture-heading {
+        display: block;
+        margin-bottom: 0;
+      }
+      .architecture-lead {
+        margin: 10px 0 18px;
+        max-width: 76ch;
+        color: var(--soft);
+        break-after: avoid;
+      }
+      .cutover-note {
+        margin-top: 20px;
+        border-left: 3px solid var(--orange);
+        padding: 2px 0 2px 16px;
+        break-inside: avoid;
+      }
+      .cutover-note p { margin-top: 6px; }
+      #architecture a {
+        color: inherit;
+        text-decoration-color: #a63b22;
+        text-underline-offset: .16em;
+      }
+      .review-tree {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2.7fr);
+        align-items: center;
+        margin: 15px 0 0;
+        padding: 12px 0;
+        border-block: 1px solid var(--rule);
+        font-size: .94rem;
+        break-inside: avoid;
+      }
+      .review-tree figcaption, .review-tree .branch { padding: 6px 18px 6px 0; }
+      .review-tree figcaption { border-left: 3px solid var(--orange); padding-left: 12px; }
+      .review-tree ul { position: relative; list-style: none; margin: 0; padding: 0; }
+      .review-tree ul::before {
+        content: ""; position: absolute; left: -12px; top: 50%;
+        width: 12px; border-top: 1px solid var(--soft);
+      }
+      .review-tree li { position: relative; padding: 6px 0 6px 18px; }
+      .review-tree .has-outcomes { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); align-items: center; }
+      .review-tree li::before, .review-tree li::after { position: absolute; left: 0; content: ""; }
+      .review-tree li::before { top: 0; bottom: 0; border-left: 1px solid var(--soft); }
+      .review-tree li:first-child::before { top: 50%; }
+      .review-tree li:last-child::before { bottom: 50%; }
+      .review-tree li::after { top: 50%; width: 12px; border-top: 1px solid var(--soft); }
+      .repair-return { font-weight: 700; }
+      .repair-return span { color: #94351e; }
+      @media screen and (max-width: 720px) {
+        .review-tree, .review-tree .has-outcomes { display: block; }
+        .review-tree ul { margin-left: 12px; }
+        .review-tree ul::before { display: none; }
+        .review-tree li:first-child::before { top: 0; }
+        .review-tree li:last-child::before { bottom: auto; height: 1.45em; }
+        .review-tree li::after { top: 1.45em; }
+      }
+      .run-map {
+        margin: 16px 0 0;
+        padding: 0;
+        border: 1px solid var(--rule);
+        border-top: 3px solid var(--ink);
+        border-radius: 3px;
+      }
+      .run-map-row {
+        display: grid;
+        grid-template-columns: minmax(8rem, .7fr) minmax(0, 3fr);
+      }
+      .run-map-row + .run-map-row { border-top: 1px solid var(--rule); }
+      .run-map-row h4 {
+        padding: 18px;
+        background: #e9e8df;
+        line-height: 1.25;
+        font-size: 1.05rem;
+      }
+      .run-map-row h4 svg {
+        display: block;
+        width: 24px;
+        height: 24px;
+        margin-bottom: 8px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.6;
+      }
+      .run-map-row ol {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 28px;
+        padding: 16px 18px;
+        list-style: none;
+      }
+      .run-map-row li { position: relative; min-width: 0; }
+      .run-map-row li + li::before {
+        content: "→";
+        position: absolute;
+        left: -23px;
+        color: #8c351c;
+      }
+      .run-map-row strong { display: block; }
+      .run-map-row p { font-size: .92rem; margin-top: 3px; }
+      .run-map figcaption {
+        padding: 12px 18px;
+        border-top: 1px solid var(--rule);
+        font-size: .92rem;
+      }
+      .run-records {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin: 14px 0 0;
+      }
+      .run-records article {
+        min-width: 0;
+        padding: 14px;
+        border-top: 2px solid var(--ink);
+        background: #e9e8df;
+        break-inside: avoid;
+      }
+      .run-records h4 { font-size: 1rem; margin-bottom: 9px; }
+      .run-records pre, .tool-example pre {
+        margin: 0;
+        font: .83rem/1.6 var(--mono);
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .run-records p { font-size: .92rem; margin-top: 9px; }
+      .tool-example {
+        margin: 16px 0;
+        padding: 12px 16px;
+        border-left: 3px solid var(--orange);
+        background: #e9e8df;
+      }
+      .tool-example h4 { margin-bottom: 6px; }
+      .tool-catalog code { overflow-wrap: anywhere; }
+      @media (max-width: 620px) {
+        .tool-catalog thead {
+          position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%);
+        }
+        .tool-catalog tbody tr { display: grid; padding: 10px 0; border-top: 1px solid var(--rule); }
+        .tool-catalog tbody th, .tool-catalog tbody td { padding: 2px 0; border: 0; }
+      }
+      @media (max-width: 760px) {
+        .run-map-row, .run-records { grid-template-columns: 1fr; }
+        .run-map-row h4 { display: flex; align-items: center; gap: 9px; padding: 8px 14px; }
+        .run-map-row h4 svg { width: 19px; height: 19px; margin: 0; }
+        .run-map-row ol { grid-template-columns: 1fr; gap: 18px; padding: 10px 14px; }
+        .run-map-row li + li::before { content: "↓"; left: 0; top: -19px; }
+      }
+      @media print {
+        .run-map-row { break-inside: avoid; }
+        .run-map-row h4 { background: transparent; }
+      }
+      .diagram-intro {
+        margin: 9px 0 20px;
+        max-width: 82ch;
+      }
+      .sequence {
+        list-style: none;
+        padding: 0;
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        isolation: isolate;
+      }
+      .sequence li {
+        position: relative;
+        padding: 22px 24px 0 0;
+        min-width: 0;
+      }
+      .sequence li:not(:last-child)::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 5px;
+        height: 2px;
+        width: 100%;
+        background: #9d9e95;
+      }
+      .seq-station {
+        width: 12px;
+        height: 12px;
+        border: 2px solid var(--ink);
+        border-radius: 50%;
+        position: absolute;
+        left: 0;
+        top: 0;
+        z-index: 1;
+        background: var(--paper);
+      }
+      .sequence h4 {
+        font-size: 1.22rem;
+        margin: 5px 0 7px;
+      }
+      .sequence p {
+        font-size: 0.96rem;
+      }
+      .consequence {
+        margin-top: 18px;
+        max-width: 90ch;
+        border-left: 3px solid var(--orange);
+        padding-left: 12px;
+      }
+      @media (max-width: 650px) {
+        .sequence {
+          grid-template-columns: 1fr;
+        }
+        .sequence li {
+          padding: 0 0 16px 24px;
+        }
+        .sequence li:last-child {
+          padding-bottom: 0;
+        }
+        .sequence li:not(:last-child)::before {
+          left: 5px;
+          top: 0;
+          width: 2px;
+          height: 100%;
+        }
+      }
+      @media print {
+        .sequence li {
+          break-inside: avoid;
+        }
+        .technical-section {
+          margin-top: 14px;
+        }
+      }
+
+      .data-map {
+        border-collapse: collapse;
+        width: 100%;
+        table-layout: fixed;
+      }
+      .data-map th,
+      .data-map td {
+        text-align: left;
+        vertical-align: top;
+        padding: 10px 10px 10px 0;
+        border-bottom: 1px solid var(--rule);
+      }
+      .data-map thead {
+        font: 600 0.78rem var(--mono);
+        text-transform: uppercase;
+      }
+      .data-map tbody th {
+        font-size: 1rem;
+      }
+      .tech-links {
+        margin-top: 15px;
+        max-width: 58ch;
+      }
+      .tech-links a {
+        display: inline-block;
+        margin: 2px 14px 4px 0;
+        color: var(--ink);
+        text-decoration-color: var(--orange);
+        text-underline-offset: 4px;
+        font-weight: 650;
+        font-size: 0.93rem;
+      }
+      .db-choice,
+      .forecast-drivers {
+        margin-top: 24px;
+      }
+      .db-choice h4 {
+        font-size: 1.16rem;
+      }
+      .db-choice p,
+      .forecast-drivers > p {
+        margin-top: 8px;
+      }
+      .db-choice a {
+        color: inherit;
+      }
+      .forecast-drivers .risk-table {
+        margin-top: 16px;
+      }
+      .risk-table th small {
+        display: block;
+        color: var(--soft);
+        font: 600 0.75rem var(--mono);
+        margin-bottom: 3px;
+      }
+
+      .factory-map {
+        margin-top: 22px;
+        border: 1px solid #a6a89f;
+        border-radius: 4px;
+        padding: 24px 18px 0;
+        background: #faf9f2;
+      }
+      .pipeline {
+        display: grid;
+        grid-template-columns: repeat(6, minmax(0, 1fr));
+        list-style: none;
+        margin: 0;
+        padding: 0;
+      }
+      .pipeline li {
+        min-width: 0;
+      }
+      .transfer {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .node-icon {
+        width: 44px;
+        height: 44px;
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+        background: var(--ink);
+        color: var(--paper);
+        border-radius: 8px;
+      }
+      .node-icon svg {
+        width: 29px;
+        height: 29px;
+      }
+      .transfer-label {
+        position: relative;
+        display: block;
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+        color: var(--soft);
+        font: 600 0.72rem/1.16 var(--mono);
+        padding: 0 2px 7px;
+        margin-right: 4px;
+        border-bottom: 1px solid #74776c;
+      }
+      .transfer-label:after {
+        content: "";
+        position: absolute;
+        right: 0;
+        bottom: -3px;
+        width: 5px;
+        height: 5px;
+        border-right: 1px solid var(--ink);
+        border-top: 1px solid var(--ink);
+        transform: rotate(45deg);
+      }
+      .pipeline li:last-child .transfer-label {
+        border-bottom-style: double;
+        border-bottom-width: 3px;
+      }
+      .pipeline li:last-child .transfer-label:after {
+        display: none;
+      }
+      .node-copy {
+        padding: 13px 12px 0 0;
+      }
+      .node-copy h3 {
+        font-size: 1.1rem;
+      }
+      .node-copy > p {
+        font-size: 0.91rem;
+        line-height: 1.42;
+        margin-top: 6px;
+      }
+      .subagent-tree { margin: 10px 0 0; }
+      .subagent-tree > dt {
+        font: 600 .79rem/1.3 var(--mono);
+        color: #8b321b;
+      }
+      .subagent-tree > dd {
+        position: relative;
+        margin: 0 0 0 3px;
+        padding: 6px 0 0 14px;
+        font-size: .92rem;
+        font-weight: 650;
+        line-height: 1.22;
+      }
+      .subagent-tree > dd::before, .subagent-tree > dd::after {
+        content: "";
+        position: absolute;
+        left: 0;
+      }
+      .subagent-tree > dd::before { top: 0; bottom: 0; border-left: 1px solid #8b321b; }
+      .subagent-tree > dd::after { top: calc(6px + .55em); width: 9px; border-top: 1px solid #8b321b; }
+      .subagent-tree > dd:last-child::before { bottom: auto; height: calc(6px + .55em); }
+      .sandbox-branch {
+        border-block: 1px solid var(--rule);
+        padding: 14px 18px 18px;
+        background: #f4f3eb;
+        break-inside: avoid;
+      }
+      .sandbox-branch h4 { margin: 0 0 4px; font-size: 1.12rem; }
+      .sandbox-branch > p { margin: 0; font-size: .92rem; }
+      .sandbox-branch dd span { display: block; margin-top: 3px; font-weight: 400; color: var(--soft); }
+      @media (min-width: 761px), print {
+        .sandbox-branch .subagent-tree {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+        }
+        .sandbox-branch dt { grid-column: 1 / -1; }
+        .sandbox-branch dd {
+          margin: 8px 0 0; padding: 10px 12px 0 0;
+          border-top: 1px solid #8b321b;
+        }
+        .sandbox-branch dd::after { top: 0; left: 3px; height: 6px; width: 0; border: 0; border-left: 1px solid #8b321b; }
+        .sandbox-branch dd::before { display: none; }
+        .sandbox-branch dd:first-of-type::before { display: block; height: 8px; top: -9px; left: 3px; }
+        .sandbox-branch dd:last-of-type { border-top-color: transparent; }
+        .sandbox-branch dd:last-of-type::before { display: block; width: 3px; height: 0; top: -1px; border: 0; border-top: 1px solid #8b321b; }
+      }
+      .map-notes {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        border-top: 1px solid var(--rule);
+        margin-top: 20px;
+        padding: 14px 0;
+      }
+      .map-notes > div {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+      .map-notes svg {
+        flex: none;
+        width: 24px;
+        height: 24px;
+      }
+      .map-notes b {
+        display: block;
+      }
+      .map-notes p {
+        font-size: 0.9rem;
+      }
+      @media (max-width: 990px) {
+        .pipeline {
+          grid-template-columns: 1fr;
+        }
+        .pipeline li {
+          display: grid;
+          grid-template-columns: 44px minmax(0, 1fr);
+          grid-template-rows: auto auto;
+          column-gap: 13px;
+          position: relative;
+          padding-bottom: 14px;
+        }
+        .pipeline li:not(:last-child):before {
+          content: "";
+          position: absolute;
+          top: 45px;
+          bottom: 2px;
+          left: 21px;
+          border-left: 1px solid #828579;
+        }
+        .transfer {
+          display: contents;
+        }
+        .node-icon {
+          grid-column: 1;
+          grid-row: 1;
+        }
+        .node-copy {
+          grid-column: 2;
+          grid-row: 1;
+          padding: 2px 0 0;
+        }
+        .transfer-label {
+          grid-column: 2;
+          grid-row: 2;
+          width: fit-content;
+          padding: 2px 0;
+          margin: 5px 0 0;
+          border: 0 !important;
+          text-align: left;
+        }
+        .transfer-label:after {
+          display: none;
+        }
+        .transfer-label:before {
+          content: "↓ ";
+          position: static;
+          width: auto;
+          height: auto;
+          background: transparent;
+          animation: none;
+          color: var(--ink);
+        }
+        .pipeline li:last-child .transfer-label:before {
+          content: "Output · ";
+        }
+        .map-notes {
+          margin-top: 3px;
+        }
+      }
+      @media (max-width: 650px) {
+        .factory-map {
+          padding: 16px 12px 0;
+        }
+        .map-notes {
+          grid-template-columns: 1fr;
+          gap: 10px;
+        }
+      }
+      @media print {
+        .pipeline {
+          grid-template-columns: 1fr 1fr;
+        }
+        .pipeline li {
+          break-inside: avoid;
+          padding-right: 12px;
+        }
+        .factory-map *,
+        .factory-map *::before {
+          animation: none !important;
+        }
+        .node-icon {
+          print-color-adjust: exact;
+        }
+      }
+
+      .mast {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(10rem, 16rem) auto;
+        gap: 4px 16px;
+        padding-block: 9px;
+      }
+      .wordmark {
+        grid-column: 1;
+        grid-row: 1;
+      }
+      .author {
+        grid-column: 1;
+        grid-row: 2;
+        display: flex;
+        align-items: baseline;
+        gap: 4px 12px;
+        flex-wrap: wrap;
+        color: var(--soft);
+        font-size: 0.85rem;
+      }
+      .author a,
+      .opening-links a {
+        color: var(--ink);
+        font-weight: 650;
+        text-decoration-thickness: 1px;
+        text-underline-offset: 3px;
+      }
+      .modes {
+        grid-column: 3;
+        grid-row: 1/3;
+      }
+      .proposal-search {
+        position: relative;
+        grid-column: 2;
+        grid-row: 1/3;
+        min-width: 0;
+      }
+      .proposal-search input {
+        width: 100%;
+        border: 1px solid #898b82;
+        border-radius: 4px;
+        background: transparent;
+        color: var(--ink);
+        padding: 9px 10px 9px 34px;
+        font: inherit;
+        line-height: 1.2;
+      }
+      .proposal-search input:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 2px;
+      }
+      .proposal-search > svg {
+        position: absolute;
+        top: 50%;
+        left: 10px;
+        transform: translateY(-50%);
+        pointer-events: none;
+      }
+      .search-panel {
+        position: absolute;
+        z-index: 1;
+        top: calc(100% + 6px);
+        right: 0;
+        width: min(29rem, 85vw);
+        max-height: min(50dvh, 26rem);
+        overflow: auto;
+        overscroll-behavior: contain;
+        border: 1px solid var(--ink);
+        border-radius: 4px;
+        background: var(--paper);
+        box-shadow: 0 8px 22px #0002;
+      }
+      .search-panel p { padding: 9px 12px; font-size: .88rem; }
+      .search-panel ul { list-style: none; padding: 0; }
+      .search-panel a {
+        display: grid;
+        gap: 2px;
+        padding: 8px 12px;
+        border-top: 1px solid var(--rule);
+        color: var(--ink);
+        text-decoration: none;
+      }
+      .search-panel a:hover, .search-panel a:focus-visible {
+        background: #e7e6dc;
+        outline-offset: -2px;
+      }
+      .search-panel small { color: var(--soft); }
+      .search-panel .match-context {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        color: var(--soft);
+        font-size: .87rem;
+      }
+      .search-panel strong { font-size: 1rem; }
+      @media (min-width: 651px) and (max-width: 860px) {
+        .mast { grid-template-columns: minmax(0, 1fr) 10rem auto; }
+        .search-panel { right: 50%; transform: translateX(50%); }
+      }
+      @media print {
+        .proposal-search { display: none; }
+        .mast { grid-template-columns: 1fr auto; }
+        .modes { grid-column: 2; }
+      }
+      @media (max-width: 650px) {
+        .mast {
+          gap: 5px;
+          grid-template-columns: minmax(0, 1fr) auto;
+        }
+        .modes {
+          grid-column: 2;
+          grid-row: 1;
+        }
+        .proposal-search { grid-column: 1/-1; grid-row: 3; }
+        .search-panel { width: 100%; }
+        .author {
+          grid-column: 1/-1;
+          font-size: 0.8rem;
+          gap: 2px 10px;
+        }
+      }
+
+      @media screen {
+        .modes fieldset {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          min-width: 0;
+          padding: 0;
+          border: 0;
+          gap: 6px;
+        }
+        .modes legend {
+          margin-bottom: 4px;
+          padding: 0;
+          font: 600 .75rem/1.2 var(--mono);
+          letter-spacing: .03em;
+        }
+        .modes span.opt {
+          position: relative;
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 2px;
+          min-width: 8.5rem;
+          min-height: 54px;
+          padding: 8px 32px 8px 12px;
+          border: 1.5px solid var(--ink);
+          border-radius: 5px;
+          background: #fff;
+          color: var(--ink);
+          font-size: 1.125rem;
+          line-height: 1.15;
+        }
+        .modes .opt::after {
+          content: "";
+          position: absolute;
+          right: 12px;
+          top: calc(50% - 7px);
+          width: 14px;
+          height: 14px;
+          box-sizing: border-box;
+          border: 1.5px solid currentColor;
+          border-radius: 50%;
+        }
+        .modes input:checked + .opt {
+          background: var(--ink);
+          color: white;
+        }
+        .modes input:checked + .opt::before {
+          position: absolute;
+          right: 16px;
+          top: calc(50% - 3px);
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: currentColor;
+        }
+        .modes label:hover input:not(:checked) + .opt { background: #e9e8de; }
+        .mode-time {
+          display: block;
+          font-size: .8rem;
+          line-height: 1.25;
+          font-weight: 400;
+        }
+      }
+      @media screen and (max-width: 760px) {
+        .mast {
+          grid-template-columns: max-content minmax(0, 1fr);
+          gap: 7px 10px;
+        }
+        .proposal-search { grid-column: 2; grid-row: 1; }
+        .search-panel { right: 0; transform: none; width: min(29rem, calc(100vw - 32px)); }
+        .modes { grid-column: 1 / -1; grid-row: 2; }
+        .modes fieldset { width: 100%; }
+        .modes span.opt { min-width: 0; }
+        .author { grid-column: 1 / -1; grid-row: 3; }
+      }
+
+      .showcase {
+        padding-top: clamp(24px, 3vw, 42px);
+      }
+      .showcase-head h1 {
+        max-width: none;
+        font-size: clamp(2.65rem, 5.3vw, 5rem);
+      }
+      .opening {
+        display: grid;
+        grid-template-columns: minmax(0, 1.65fr) minmax(18rem, 1fr);
+        align-items: center;
+        gap: 16px clamp(20px, 4vw, 56px);
+      }
+      .assumptions {
+        border-left: 3px solid var(--orange);
+        padding-left: 16px;
+      }
+      .assumptions h2 {
+        font-size: 1.12rem;
+        margin-bottom: 5px;
+      }
+      .assumptions p {
+        font-size: 0.96rem;
+      }
+      .assumptions p + p { margin-top: 0.6em; }
+      .reading-time { margin-top: 12px; color: var(--soft); font-weight: 600; }
+      .opening-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 16px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+      }
+      #factory-intake, .showcase-head > p:last-child {
+        margin-top: 10px;
+      }
+      .pdf-downloads {
+        display: inline-flex;
+        align-items: baseline;
+        gap: 8px;
+      }
+      #faq details {
+        border-top: 1px solid var(--rule);
+        break-inside: avoid;
+      }
+      #faq summary {
+        padding: 12px 0;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      #faq summary:focus-visible {
+        outline: 2px solid var(--ink);
+        outline-offset: 2px;
+      }
+      .faq-answer { max-width: 76ch; padding-bottom: 14px; }
+      .faq-wide { max-width: none; }
+      .faq-answer .tech, .faq-answer p + p { margin-top: 6px; }
+      #deployment-faq h3 {
+        margin-bottom: 14px;
+      }
+      #faq a {
+        color: var(--ink);
+        text-underline-offset: 3px;
+      }
+      .case-selector {
+        border: 0;
+        padding: 0;
+        margin: 20px 0;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 5px;
+      }
+      .case-selector legend,
+      .connections > b,
+      .scene-bar,
+      .signal-flow small,
+      .stage-type {
+        font: 600 0.76rem/1.35 var(--mono);
+        letter-spacing: 0.035em;
+      }
+      .case-selector legend {
+        margin-bottom: 6px;
+        color: var(--soft);
+      }
+      .case-selector label {
+        position: relative;
+        cursor: pointer;
+      }
+      .case-selector input {
+        position: absolute;
+        opacity: 0;
+        width: 1px;
+        height: 1px;
+      }
+      .case-selector label > span {
+        display: block;
+        border: 1px solid #9b9d92;
+        border-radius: 3px;
+        padding: 8px 14px;
+      }
+      .case-selector small {
+        display: block;
+        color: var(--soft);
+        font-size: 0.85rem;
+      }
+      .case-selector input:checked + span {
+        background: var(--ink);
+        color: var(--paper);
+        border-color: var(--ink);
+        box-shadow: inset 4px 0 var(--orange);
+      }
+      .case-selector input:checked + span small {
+        color: #ddded8;
+      }
+      .case-selector input:focus-visible + span {
+        outline: 3px solid #006891;
+        outline-offset: 2px;
+      }
+      .case-notes {
+        display: none;
+      }
+      .showcase:has(input[value="new-project"]:checked)
+        [data-case="new-project"],
+      .showcase:has(input[value="one-feature"]:checked)
+        [data-case="one-feature"],
+      .showcase:has(input[value="bug-repair"]:checked)
+        [data-case="bug-repair"],
+      .showcase:has(input[value="second-team"]:checked)
+        [data-case="second-team"] {
+        display: block;
+      }
+      .case-intro h2 {
+        font-size: clamp(1.55rem, 2.65vw, 2.45rem);
+      }
+      .case-intro p {
+        margin-top: 5px;
+        font-size: 1rem;
+      }
+      .connections {
+        display: flex;
+        align-items: baseline;
+        gap: 8px 28px;
+        margin: 14px 0 16px;
+        font-size: 0.9rem;
+      }
+      .connections > b {
+        color: var(--soft);
+      }
+      .connections dl {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px clamp(16px, 3vw, 42px);
+        margin: 0;
+      }
+      .connections dt {
+        font-weight: 400;
+      }
+      .connections dd {
+        margin: 0;
+        color: var(--soft);
+        font-size: 0.86rem;
+      }
+      .connections [aria-current="true"] dt {
+        font-weight: 700;
+      }
+      .transcript {
+        padding-left: 22px;
+      }
+      .transcript li {
+        margin: 8px 0;
+      }
+      .transcript li > span {
+        margin-left: 8px;
+      }
+      .transcript li p {
+        margin-top: 3px;
+      }
+      .ready .transcript {
+        display: none;
+      }
+      .run-scene {
+        color: var(--paper);
+        background: var(--ink);
+        padding: 12px clamp(14px, 2.8vw, 33px) 12px;
+        border-radius: 4px;
+      }
+      .run-scene[hidden] {
+        display: none;
+      }
+      .scene-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 12px;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid #484b43;
+        padding-bottom: 8px;
+        color: #e0e1d8;
+      }
+      .live-dot {
+        width: 8px;
+        height: 8px;
+        display: inline-block;
+        background: var(--orange);
+        border-radius: 50%;
+        margin-right: 6px;
+      }
+      .run-count {
+        margin-left: 6px;
+      }
+      .scene-controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-left: auto;
+      }
+      .scene-controls button {
+        min-height: 36px;
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        background: transparent;
+        border: 1px solid #777b72;
+        border-radius: 4px;
+        color: var(--paper);
+        font:
+          600 0.86rem Arial,
+          sans-serif;
+        cursor: pointer;
+        padding: 6px 10px;
+      }
+      .scene-controls button:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      @media screen and (max-width: 440px) {
+        .scene-controls {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          width: 100%;
+        }
+        .scene-controls button { justify-content: center; }
+      }
+      .scene-controls button:focus-visible {
+        outline: 2px solid var(--paper);
+        outline-offset: 3px;
+      }
+      .pause-run i {
+        width: 8px;
+        height: 10px;
+        border-inline: 3px solid var(--paper);
+      }
+      .is-paused .pause-run i {
+        width: 0;
+        height: 0;
+        border: 0;
+        border-top: 5px solid transparent;
+        border-bottom: 5px solid transparent;
+        border-left: 7px solid var(--paper);
+      }
+      .scene-title {
+        display: flex;
+        align-items: baseline;
+        flex-wrap: wrap;
+        gap: 7px 13px;
+        margin: 15px 0;
+      }
+      .scene-title h3 {
+        font-size: clamp(1.4rem, 2.7vw, 2.2rem);
+      }
+      .stage-type {
+        color: #dedfd5;
+      }
+      .human .stage-type {
+        color: #ffad89;
+      }
+      .signal-flow {
+        display: grid;
+        align-items: center;
+        grid-template-columns: minmax(0, 1fr) minmax(20px, 0.3fr) minmax(
+            0,
+            1.1fr
+          ) minmax(20px, 0.3fr) minmax(0, 1.4fr);
+        gap: 8px;
+      }
+      .actor-station,
+      .tool-station {
+        display: grid;
+        grid-template-columns: 40px 1fr;
+        gap: 1px 9px;
+        align-items: center;
+      }
+      .signal-icon {
+        grid-row: span 2;
+        display: grid;
+        place-items: center start;
+        width: 40px;
+        height: 40px;
+      }
+      .signal-icon svg {
+        width: 25px;
+        height: 25px;
+      }
+      .human .actor-station .signal-icon {
+        color: #ffac88;
+      }
+      .tool-station.using-connector .signal-icon,
+      .tool-station.using-connector small {
+        color: #ffac88;
+      }
+      .signal-flow small {
+        font-size: 0.7rem;
+        color: #d6d8ca;
+      }
+      .signal-flow strong {
+        font-size: 1.05rem;
+        line-height: 1.2;
+      }
+      .wire {
+        position: relative;
+        height: 1px;
+        background: #a2a599;
+      }
+      .wire:after {
+        content: "";
+        position: absolute;
+        right: 0;
+        top: -3px;
+        border-right: 1px solid #c7c9bf;
+        border-top: 1px solid #c7c9bf;
+        width: 6px;
+        height: 6px;
+        transform: rotate(45deg);
+      }
+      .wire:before {
+        content: "";
+        position: absolute;
+        width: 8px;
+        height: 8px;
+        background: var(--orange);
+        top: -3.5px;
+        left: 0;
+        border-radius: 50%;
+      }
+      .artifact {
+        background: var(--paper);
+        color: var(--ink);
+        border-left: 4px solid var(--orange);
+        padding: 10px 13px;
+        min-height: 60px;
+        display: grid;
+        align-content: center;
+      }
+      .artifact small {
+        color: var(--soft);
+      }
+      .artifact b {
+        font-size: 1rem;
+        line-height: 1.25;
+        margin-top: 3px;
+      }
+      .scene-action {
+        margin-top: 15px;
+        max-width: 89ch;
+      }
+      .scene-detail {
+        color: #d0d2c8;
+        font-size: 0.91rem;
+        max-width: 95ch;
+        margin-top: 6px;
+      }
+      .scene-rail {
+        display: flex;
+        list-style: none;
+        padding: 0;
+        margin: 16px 0 6px;
+        gap: 3px;
+      }
+      .scene-rail li {
+        flex: 1;
+        border-top: 2px solid #64685d;
+        padding-top: 6px;
+        color: #d0d2c8;
+        font-size: 0.78rem;
+        line-height: 1.25;
+      }
+      .scene-rail li.current {
+        border-color: var(--orange);
+        color: white;
+        font-weight: bold;
+      }
+      .scene-rail li.past {
+        border-color: #d9dbd0;
+      }
+      .run-scene figcaption {
+        font-size: 0.77rem;
+        color: #d0d2c8;
+      }
+      .run-scene figcaption span {
+        margin-left: 12px;
+      }
+      @keyframes transmit {
+        from {
+          left: 0;
+          opacity: 0.25;
+        }
+        80% {
+          opacity: 1;
+        }
+        to {
+          left: calc(100% - 8px);
+          opacity: 0.35;
+        }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .wire:before {
+          animation: transmit 1.55s ease-in-out infinite;
+        }
+        .wire-out:before {
+          animation-delay: 0.7s;
+        }
+        .is-paused .wire:before,
+        .offscreen .wire:before {
+          animation-play-state: paused;
+        }
+      }
+      @media (max-width: 850px) {
+        .opening {
+          grid-template-columns: 1fr;
+        }
+        .actor-station,
+        .tool-station {
+          grid-template-columns: 1fr;
+        }
+        .signal-icon {
+          grid-row: auto;
+          margin-bottom: 4px;
+        }
+      }
+      @media (max-width: 650px) {
+        .case-selector {
+          margin: 14px 0;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 3px;
+        }
+        .case-selector label > span {
+          padding: 8px 7px;
+          min-height: 44px;
+          display: grid;
+          align-items: center;
+        }
+        .case-selector small {
+          display: block;
+          line-height: 1.25;
+        }
+        .case-selector b {
+          font-size: 0.89rem;
+        }
+        .signal-flow {
+          grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
+          gap: 8px;
+        }
+        .wire-out {
+          display: none;
+        }
+        .artifact {
+          grid-column: 1/-1;
+          min-height: 0;
+        }
+        .signal-flow strong {
+          font-size: 0.96rem;
+        }
+        .scene-rail {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 5px;
+        }
+        .scene-rail li {
+          font-size: 0.74rem;
+        }
+        .connections {
+          display: block;
+        }
+        .connections dl {
+          display: grid;
+          gap: 3px;
+          margin-top: 4px;
+        }
+        .connections dl > div {
+          display: grid;
+          grid-template-columns: minmax(6.5rem, 30%) minmax(0, 1fr);
+          gap: 8px;
+          align-items: baseline;
+        }
+        .scene-title {
+          margin: 11px 0;
+        }
+        .scene-action {
+          font-size: 0.95rem;
+        }
+      }
+      @media print {
+        @page { size: A4; margin: 14mm 15mm 17mm; }
+        .pdf-downloads, .opening-links, .proposal-search, .skip { display: none !important; }
+        :root { font-size: 13px; background: white; }
+        body { background: white; color: #111; line-height: 1.38; }
+        header { background: white; }
+        .mast { grid-template-columns: 1fr auto; min-height: 0; }
+        .modes { grid-column: 2; }
+        .shell { width: 100%; }
+        .opening { display: block; }
+        .assumptions { margin: 12px 0; }
+        .showcase { padding-block: 10px; }
+        .transcript .phase-name { font-weight: 700; }
+        .transcript .tool-name { color: var(--soft); }
+        .transcript li > span::before { content: "· "; }
+        .transcript li > span { margin-left: 3px; }
+        .case-intro, .connections, .diagram-intro, caption { break-after: avoid; }
+        .case-intro, .connections, .sequence, .run-records, .map-notes, .tool-example { break-inside: avoid; }
+        .diagram-intro, .consequence, .data-map { break-inside: avoid; }
+        thead { break-after: avoid; }
+        .section-head, .technical-section > h3 { break-after: avoid; }
+        .factory-map, #runtime-topology, .guards, .comparison, #policy-evaluation { break-inside: avoid; }
+        .run-map-row { grid-template-columns: 15% 1fr; }
+        .run-map-row h4, .run-map-row ol, .run-map figcaption, .sandbox-branch { padding: 9px 12px; }
+        .run-map-row ol { gap: 20px; }
+        .run-map-row li + li::before { left: -17px; }
+        .connections dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); flex: 1; gap: 12px; }
+        .transcript p, .faq-answer, .faq-answer p { max-width: none; }
+        #faq details { padding-block: 8px; }
+        #faq details::details-content { content-visibility: visible; }
+        #faq details:has(.faq-wide) { break-inside: auto; }
+        #faq summary { display: block; padding: 0; break-after: avoid; }
+        .faq-answer { padding: 0; margin-top: 3px; }
+        #faq .section-head > a { display: none; }
+        .case-selector,
+        .run-scene,
+        .tech-links {
+          display: none !important;
+        }
+        .case-notes,
+        .ready .transcript {
+          display: block !important;
+        }
+        .case-notes::before {
+          content: attr(data-phase);
+          font-weight: 700;
+          display: block;
+          break-after: avoid;
+        }
+        .case-notes {
+          break-before: auto;
+          margin: 12px 0;
+        }
+        .transcript li {
+          break-inside: avoid;
+          margin: 7px 0;
+        }
+        .transcript li p { margin-top: 2px; }
+        .case-anchors {
+          display: none;
+        }
+        .showcase-head h1 {
+          font-size: 29pt;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to presentation</a>
+    <header>
+      <div class="shell mast">
+        <div class="wordmark">
+          <i class="mark" aria-hidden="true"></i>Software Factory
+        </div>
+        <div class="author">
+          <span>By Carlos Andres Rodriguez Trigueros</span
+          ><a rel="me" href="https://www.linkedin.com/in/carlosan1708/"
+            >LinkedIn</a
+          ><a rel="me" href="https://github.com/carlosan1708">GitHub</a>
+          <span class="pdf-downloads" role="group" aria-label="PDF downloads">
+            Download PDF
+            <a class="download-pdf" href="downloads/software-factory-executive.pdf" download aria-label="Download executive PDF">Executive</a>
+            <a class="download-pdf" href="downloads/software-factory-technical.pdf" download aria-label="Download technical PDF">Technical</a>
+          </span>
+        </div>
+        <div class="proposal-search" role="search" aria-label="Proposal" hidden>
+          <label class="sr" for="proposal-query">Search proposal</label>
+          <svg width="16" height="16" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.75">
+            <circle cx="8" cy="8" r="5.5"/><path d="m12 12 5 5"/>
+          </svg>
+          <input id="proposal-query" type="search" placeholder="Search" autocomplete="off" aria-controls="proposal-matches" />
+          <div class="search-panel" hidden>
+            <p role="status"></p>
+            <ul id="proposal-matches" aria-label="Search results"></ul>
+          </div>
+        </div>
+        <div class="modes">
+          <fieldset>
+            <legend>Reading mode</legend>
+            <label
+              ><input
+                type="radio"
+                name="mode"
+                id="executive"
+                value="executive"
+                aria-labelledby="executive-label"
+                aria-describedby="executive-time"
+                checked
+              /><span class="opt"><span id="executive-label">Executive</span><span id="executive-time" class="mode-time">10 min read</span></span></label
+            ><label
+              ><input
+                type="radio"
+                name="mode"
+                id="technical"
+                value="technical"
+                aria-labelledby="technical-label"
+                aria-describedby="technical-time"
+              /><span class="opt"><span id="technical-label">Technical</span><span id="technical-time" class="mode-time">20 min read</span></span></label
+            >
+          </fieldset>
+        </div>
+      </div>
+    </header>
+    <main id="main" tabindex="-1" class="shell">
+      <section id="walkthrough" class="showcase" aria-labelledby="title">
+        <div id="workflow" class="anchor"></div>
+        <div class="opening">
+          <div class="showcase-head">
+            <p class="tag">Proposed factory · fictional examples</p>
+            <h1 id="title">A software factory on Azure</h1>
+            <p class="reading-time exec">Executive · About 10 minutes to read, excluding the FAQ</p>
+            <p class="reading-time tech">Technical · About 20 minutes to read, excluding the FAQ</p>
+            <p id="factory-intake"><strong>What triggers the factory?</strong> In Phase 1, a team member opens a GitHub issue to request a change.
+              Later, a signed-in form or an internal service could submit the same request.
+              The Build Orchestrator starts coding once the sponsor approves the scope or a standing repair policy covers it.</p>
+            <p>
+              <strong>Phase 1</strong> delivers the factory to one operations team. It builds and maintains
+              Screening Desk, the replacement for the team’s legacy shift tracker.
+              <strong>Phase 2</strong> adds connectors or serves another team.
+            </p>
+          </div>
+          <aside class="assumptions" id="assumptions" aria-labelledby="assumptions-heading">
+            <h2 id="assumptions-heading">Assumptions</h2>
+            <p>
+              The organization ruled out AI app builders for this project. Its engineers need to
+              adapt connectors and permissions as legacy systems, databases, the ERP and external
+              services change. They review code in GitHub and release to Azure. The team knows
+              the factory model and can reuse earlier templates and runbooks.
+            </p>
+            <p id="faq-claude-github">We chose an Azure-hosted Claude Code worker over Claude Code’s GitHub integration
+              for the flexibility to adapt intake, connectors and approvals to each project.</p>
+            <p>
+              The pilot assumes the team can get a sample export from the legacy tracker and observe
+              a shift handoff. Engineers use both to check that the next shift can find each open issue,
+              its owner and its follow-up time in the new app.
+            </p>
+            <nav class="opening-links" aria-label="Proposal sections">
+              <a href="#architecture">Architecture</a>
+              <a href="#delivery">Forecast</a>
+              <a href="#faq">FAQ</a>
+            </nav>
+          </aside>
+        </div>
+        <div class="case-anchors">
+          <span class="anchor" id="new-project"></span
+          ><span class="anchor" id="one-feature"></span
+          ><span class="anchor" id="bug-repair"></span
+          ><span class="anchor" id="second-team"></span>
+        </div>
+        <fieldset class="case-selector">
+          <legend>Choose a scenario</legend>
+          <label
+            ><input
+              type="radio"
+              name="scenario"
+              value="new-project"
+              checked
+            /><span
+              ><b>Whole project</b><small>Phase 1 · Replace a legacy app</small></span
+            ></label
+          ><label
+            ><input type="radio" name="scenario" value="bug-repair" /><span
+              ><b>Bug repair</b><small>Phase 1 · Hidden blocker</small></span
+            ></label
+          ><label
+            ><input type="radio" name="scenario" value="one-feature" /><span
+              ><b>One feature</b><small>Phase 2 · ERP handoff</small></span
+            ></label
+          ><label
+            ><input type="radio" name="scenario" value="second-team" /><span
+              ><b>Second team</b><small>Phase 2 · Project Library</small></span
+            ></label
+          >
+        </fieldset>
+        <article class="case-notes" data-case="new-project" data-phase="Phase 1">
+          <div class="case-intro">
+            <h2>Replace the legacy shift tracker</h2>
+            <p>
+              The operations lead requests a replacement shift tracker. One export carries open issues,
+              owners and deadlines. A read-only feed supplies bookings.
+            </p>
+          </div>
+          <div class="connections">
+            <b>Connectors</b>
+            <dl aria-label="Scenario connectors">
+              <div data-connector="RAG"><dt>RAG</dt><dd>Versioned starter guidance</dd></div>
+              <div data-connector="Database"><dt>Database</dt><dd>Owners, follow-up times and notes</dd></div>
+              <div data-connector="Legacy system"><dt>Legacy system</dt><dd>Bookings and master delivery status</dd></div>
+            </dl>
+          </div>
+          <ol class="transcript">
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Approve scope</b
+              ><span class="actor-name">Project sponsor</span
+              ><span class="tool-name">Scope pull request</span>
+              <p class="action-text">The operations lead chooses one shift team. Every open issue must survive the move.</p>
+              <p class="output-text">
+                Scope approved · migrate open issues and keep one live booking feed
+              </p>
+              <p class="tech frame-detail">The sponsor signs the scope PR. A one-time export supplies issues, a read-only booking feed supplies screenings, and the new app owns notes.</p>
+            </li>
+            <li data-kind="docs" data-system="RAG" data-human="false">
+              <b class="phase-name">Read guidance</b
+              ><span class="actor-name">Discovery subagent</span
+              ><span class="tool-name">RAG retrieval broker</span>
+              <p class="action-text">Claude delegates discovery. Trace the booking ID from the legacy export to the new register.</p>
+              <p class="output-text">
+                Migration map · issue ID, booking ID, owner, due time and note
+              </p>
+              <p class="tech frame-detail"><code>search_project_guidance</code> returns cited excerpts after the retrieval broker checks the project’s document access.</p>
+            </li>
+            <li
+              data-kind="legacy"
+              data-system="Legacy system"
+              data-human="false"
+            >
+              <b class="phase-name">Read booking</b
+              ><span class="actor-name">Claude Code</span
+              ><span class="tool-name">Legacy schedule adapter</span>
+              <p class="action-text">Check a booking sample. Hall B screens at 18:30. Its master was due at 16:00.</p>
+              <p class="output-text">Booking F17-42 · master missing at 16:15</p>
+              <p class="tech frame-detail"><code>get_schedule_sample</code> returns only authorized festival fields. The broker holds the source credential.</p>
+            </li>
+            <li data-kind="db" data-system="Database" data-human="false">
+              <b class="phase-name">Build app</b
+              ><span class="actor-name">Claude Code</span
+              ><span class="tool-name">App database connector</span>
+              <p class="action-text">Build the importer and shift register. Ask the code, security and UX reviewers to inspect the patch.</p>
+              <p class="output-text">
+                New shift register · Hall B issue retained with its 16:30 follow-up
+              </p>
+              <p class="tech frame-detail"><code>describe_app_schema</code> supplies the approved fields. In Phase 1, read-only reviewers check duplicate imports, viewer write access and keyboard handoff in the sandbox preview.</p>
+            </li>
+            <li data-kind="check" data-system="" data-human="false">
+              <b class="phase-name">Verify</b
+              ><span class="actor-name">Independent verifier</span
+              ><span class="tool-name">Browser and database fixtures</span>
+              <p class="action-text">Import 24 sample issues twice. Compare owners and notes, then assign Hall B.</p>
+              <p class="output-text">
+                24 of 24 matched · 0 duplicate issues · viewer cannot edit
+              </p>
+              <p class="tech frame-detail">The independent CI runner uses protected checks and isolated fixtures in a fresh sandbox. Verification runs without Claude.</p>
+            </li>
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Review preview</b
+              ><span class="actor-name">Engineer</span
+              ><span class="tool-name">GitHub pull request</span>
+              <p class="action-text">Review the patch and watch the next coordinator find Hall B’s 16:30 follow-up in preview.</p>
+              <p class="output-text">
+                Decision · verified revision approved for merge
+              </p>
+              <p class="tech frame-detail">The broker limits writes to the work branch. A new commit invalidates the review.</p>
+            </li>
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Approve release</b
+              ><span class="actor-name">Release owner</span
+              ><span class="tool-name">GitHub Actions</span>
+              <p class="action-text">Approve the staged image and its Azure destination in GitHub Actions.</p>
+              <p class="output-text">Decision · staged digest authorized</p>
+              <p class="tech frame-detail">Approval binds the merged image digest to one production environment.</p>
+            </li>
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Switch the team</b
+              ><span class="actor-name">Operations lead and operator</span
+              ><span class="tool-name">Cutover checklist</span>
+              <p class="action-text">Freeze old edits, reconcile the final import and accept the first shift in Screening Desk.</p>
+              <p class="output-text">
+                New app owns active work · old tracker available for historical lookup
+              </p>
+              <p class="tech frame-detail">A failed reconciliation reopens the old tracker. Once staff write to the new app, reconcile those edits before switching back.</p>
+            </li>
+          </ol>
+        </article>
+        <article class="case-notes" data-case="one-feature" data-phase="Phase 2">
+          <div class="case-intro">
+            <h2>Add a handoff note to a screening</h2>
+            <p>
+              In GitHub issue #42, a coordinator requests handoff notes linked to Hall B’s maintenance ticket.
+              Staff can open a note manually. An optional ERP notification can also start a handoff in the released app.
+            </p>
+          </div>
+          <div class="connections">
+            <b>Connectors</b>
+            <dl aria-label="Scenario connectors">
+              <div data-connector="RAG"><dt>RAG</dt><dd>ERP field contract</dd></div>
+              <div data-connector="Custom ERP"><dt>Custom ERP</dt><dd>Ticket lookup and optional notifications</dd></div>
+              <div data-connector="Database"><dt>Database</dt><dd>Screening-scoped note</dd></div>
+            </dl>
+          </div>
+          <ol class="transcript">
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Approve access</b
+              ><span class="actor-name">Sponsor &amp; ERP owner</span
+              ><span class="tool-name">Email approval request</span>
+              <p class="action-text">The sponsor approves the requested feature. The ERP owner grants access to Hall B ticket fields.</p>
+              <p class="output-text">
+                Approved · Hall B lookup
+              </p>
+              <p class="tech frame-detail">Each owner signs in from an email invitation. Adding ticket notifications later requires a separate subscription approval.</p>
+            </li>
+            <li data-kind="docs" data-system="RAG" data-human="false">
+              <b class="phase-name">Read contract</b
+              ><span class="actor-name">Claude Code</span
+              ><span class="tool-name">RAG retrieval broker</span>
+              <p class="action-text">Find the maintenance-ticket fields the ERP owner approved.</p>
+              <p class="output-text">
+                Contract · hall ID, ticket reference and status
+              </p>
+              <p class="tech frame-detail"><code>search_project_guidance</code> returns the versioned ERP field contract for this project.</p>
+            </li>
+            <li data-kind="code" data-system="Custom ERP" data-human="false">
+              <b class="phase-name">Build feature</b
+              ><span class="actor-name">Claude Code</span
+              ><span class="tool-name">ERP adapter fixture</span>
+              <p class="action-text">Build an editor that staff can open directly or from an ERP event.</p>
+              <p class="output-text">
+                Candidate · note editor and event receiver
+              </p>
+              <p class="tech frame-detail"><code>get_erp_ticket_fixture</code> supplies a synthetic ticket. Development uses a sample event and local database.</p>
+            </li>
+            <li data-kind="check" data-system="" data-human="false">
+              <b class="phase-name">Verify</b
+              ><span class="actor-name">Independent verifier</span
+              ><span class="tool-name">ERP and database fixtures</span>
+              <p class="action-text">Reload a coordinator’s saved note. Try the same write as a viewer.</p>
+              <p class="output-text">
+                Passed · linked note persists and roles are enforced
+              </p>
+              <p class="tech frame-detail">Protected checks cover missing tickets, outages and other halls. Replaying an event must create just one handoff.</p>
+            </li>
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Review & release</b
+              ><span class="actor-name">Engineer &amp; release owner</span
+              ><span class="tool-name">GitHub PR and Actions</span>
+              <p class="action-text">The engineer approves the PR. The release owner approves the staged image in Actions.</p>
+              <p class="output-text">
+                Feature released · note editor available
+              </p>
+              <p class="tech frame-detail">A schema migration requires a separate approval for the target. The deployer checks the image digest.</p>
+            </li>
+            <li data-kind="erp" data-system="Custom ERP" data-human="false">
+              <b class="phase-name">Optional app event</b>
+              <span class="actor-name">Custom ERP</span>
+              <span class="tool-name">Ticket-change event</span>
+              <p class="action-text">With notifications enabled, a ticket change opens a handoff in the released app. Staff can also open one manually.</p>
+              <p class="output-text">Pending handoff · Hall B / WO-1042</p>
+              <p class="tech frame-detail">After subscription approval, Screening Desk validates the sender and hall. It saves the event ID and handoff together so repeat delivery opens only one handoff.</p>
+            </li>
+            <li data-kind="erp" data-system="Custom ERP" data-human="false">
+              <b class="phase-name">Look up ticket</b
+              ><span class="actor-name">Screening Desk runtime</span
+              ><span class="tool-name">Custom ERP connector</span>
+              <p class="action-text">Fetch the current ERP status when the coordinator opens the note.</p>
+              <p class="output-text">
+                ERP WO-1042 · projector focus · scheduled
+              </p>
+              <p class="tech frame-detail">The app’s runtime grant limits ticket reads to the coordinator’s assigned hall.</p>
+            </li>
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Confirm note</b
+              ><span class="actor-name">Festival coordinator</span
+              ><span class="tool-name">Screening handoff</span>
+              <p class="action-text">Check the ticket belongs to this screening and confirm the handoff note.</p>
+              <p class="output-text">
+                Confirmed · “Check projector focus before doors open.”
+              </p>
+              <p class="tech frame-detail">The app rechecks the signed-in coordinator’s role at save time.</p>
+            </li>
+            <li data-kind="db" data-system="Database" data-human="false">
+              <b class="phase-name">Save note</b
+              ><span class="actor-name">Screening Desk runtime</span
+              ><span class="tool-name">App database connector</span>
+              <p class="action-text">Save the note and ticket reference for the incoming shift.</p>
+              <p class="output-text">Saved · Tin Moon Postcard / WO-1042</p>
+              <p class="tech frame-detail">The app stores the screening ID, note and reference. The ERP ticket stays read-only.</p>
+            </li>
+          </ol>
+        </article>
+        <article class="case-notes" data-case="bug-repair" data-phase="Phase 1">
+          <div class="case-intro">
+            <h2>Keep an assigned blocker on the escalation list</h2>
+            <p>A coordinator files a GitHub bug report. “I assigned someone to
+              chase the missing master and Hall B disappeared. The distributor still hasn’t delivered it.”</p>
+          </div>
+          <div class="connections">
+            <b>Connectors</b>
+            <p>Local fixtures only. This repair uses no business systems.</p>
+          </div>
+          <ol class="transcript">
+            <li data-kind="docs" data-system="" data-human="false">
+              <b class="phase-name">Route repair</b
+              ><span class="actor-name">Build Orchestrator</span
+              ><span class="tool-name">Repair policy</span>
+              <p class="action-text">The existing repair grant covers this bug. Start the fix.</p>
+              <p class="output-text">Scoped fix · assigned bookings stay visible while overdue</p>
+              <p class="tech frame-detail">The repair policy covers a known query and fixture. The builder can take this short route without convening the full specialist group.</p>
+            </li>
+            <li data-kind="code" data-system="" data-human="false">
+              <b class="phase-name">Reproduce</b
+              ><span class="actor-name">Claude Code</span
+              ><span class="tool-name">Local browser fixture</span>
+              <p class="action-text">At 16:15, assign Hall B’s overdue booking. It disappears while its master is missing.</p>
+              <p class="output-text">
+                Bug reproduced · 0 overdue bookings visible, 1 expected
+              </p>
+              <p class="tech frame-detail">Claude Code runs the fixture inside its temporary Azure sandbox. The factory gateway sends model requests to Microsoft Foundry.</p>
+            </li>
+            <li data-kind="code" data-system="" data-human="false">
+              <b class="phase-name">Repair</b
+              ><span class="actor-name">Claude Code</span
+              ><span class="tool-name">Sandbox editor</span>
+              <p class="action-text">Remove the owner filter so an assigned, overdue booking stays visible.</p>
+              <p class="output-text">Patch · overdue-list query and regression test</p>
+              <p class="tech frame-detail">The broker checks the diff against the repair scope. Permission changes need review.</p>
+            </li>
+            <li data-kind="check" data-system="" data-human="false">
+              <b class="phase-name">Verify</b
+              ><span class="actor-name">Independent verifier</span
+              ><span class="tool-name">Protected browser checks</span>
+              <p class="action-text">Compare both revisions after assignment, then mark the master received.</p>
+              <p class="output-text">Base hides the overdue booking · candidate keeps it visible</p>
+              <p class="tech frame-detail">The candidate shows one overdue booking after assignment and zero after receipt. Both checks use the same clock and grant.</p>
+            </li>
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Review</b
+              ><span class="actor-name">Engineer</span
+              ><span class="tool-name">GitHub pull request</span>
+              <p class="action-text">Review the verified fix and decide whether to merge.</p>
+              <p class="output-text">Decision · current candidate approved</p>
+              <p class="tech frame-detail">Beta requires engineer review. Automatic merge needs a separately approved change class.</p>
+            </li>
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Authorize rollout</b
+              ><span class="actor-name">Release owner</span
+              ><span class="tool-name">GitHub Actions</span>
+              <p class="action-text">Check staging and approve the production job in Actions.</p>
+              <p class="output-text">
+                Decision · production promotion approved
+              </p>
+              <p class="tech frame-detail">The deployer checks the image digest. Repair uses local fixtures throughout.</p>
+            </li>
+            <li data-kind="cloud" data-system="" data-human="false">
+              <b class="phase-name">Confirm fix</b
+              ><span class="actor-name">Release controller</span
+              ><span class="tool-name">Production smoke check</span>
+              <p class="action-text">Repeat the assignment on an isolated booking in the released app.</p>
+              <p class="output-text">
+                Passed · assigned booking stays visible until the master arrives
+              </p>
+              <p class="tech frame-detail">The release service records revision health and the previous healthy traffic target.</p>
+            </li>
+          </ol>
+        </article>
+        <article class="case-notes" data-case="second-team" data-phase="Phase 2">
+          <div class="case-intro">
+            <h2>A second team launches Project Library</h2>
+            <p>The portfolio lead opens an issue asking for a searchable project catalog with editor-only review notes.</p>
+          </div>
+          <div class="connections">
+            <b>Connectors</b>
+            <dl aria-label="Scenario connectors">
+              <div data-connector="GitHub"><dt>GitHub</dt><dd>Team repository</dd></div>
+              <div data-connector="Catalog view"><dt>Catalog view</dt><dd>Approved projects</dd></div>
+              <div data-connector="Notes database"><dt>Notes database</dt><dd>Portfolio-owned</dd></div>
+            </dl>
+          </div>
+          <ol class="transcript">
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Name the owners</b>
+              <span class="actor-name">Portfolio sponsor and data owner</span>
+              <span class="tool-name">Scope pull request</span>
+              <p class="action-text">Name the catalog owner, repository owner and editors. Agree on one acceptance example.</p>
+              <p class="output-text">Approved · catalog search and editor-only notes</p>
+              <p class="tech frame-detail">The sponsor and data owner approve catalog fields on a scope PR. Export needs separate field approval.</p>
+            </li>
+            <li data-kind="code" data-system="GitHub" data-human="false">
+              <b class="phase-name">Create repository</b>
+              <span class="actor-name">Build Orchestrator</span>
+              <span class="tool-name">Versioned GitHub starter</span>
+              <p class="action-text">Create a private repository with the shared starter and protected checks.</p>
+              <p class="output-text">Project Library · private repository ready</p>
+              <p class="tech frame-detail">A new project ID binds its repository, policy version, grants and release target.</p>
+            </li>
+            <li data-kind="db" data-system="Catalog view" data-human="false">
+              <b class="phase-name">Map the catalog</b>
+              <span class="actor-name">Claude Code</span>
+              <span class="tool-name">Approved catalog contract and fixtures</span>
+              <p class="action-text">Build catalog search. Searching for “depot” must find Depot retrofit.</p>
+              <p class="output-text">Preview · Depot retrofit</p>
+              <p class="tech frame-detail">Development uses synthetic rows and versioned fields. The runtime reads the approved view with a project-specific identity.</p>
+            </li>
+            <li data-kind="code" data-system="Notes database" data-human="false">
+              <b class="phase-name">Add review notes</b>
+              <span class="actor-name">Claude Code</span>
+              <span class="tool-name">Local notes database fixture</span>
+              <p class="action-text">Let editors attach a review note to a catalog entry.</p>
+              <p class="output-text">Candidate · review note linked to Depot retrofit</p>
+              <p class="tech frame-detail">Separate identities read the portfolio view and write to the app’s notes database.</p>
+            </li>
+            <li data-kind="check" data-system="" data-human="false">
+              <b class="phase-name">Verify access</b>
+              <span class="actor-name">Independent verifier</span>
+              <span class="tool-name">Protected browser and database checks</span>
+              <p class="action-text">Check editor saves, viewer denials and isolation from Screening Desk.</p>
+              <p class="output-text">Passed · editor save, viewer denial, project isolation</p>
+              <p class="tech frame-detail">The verifier runs the portfolio acceptance cases on fresh fixtures and records the candidate revision.</p>
+            </li>
+            <li data-kind="person" data-system="GitHub" data-human="true">
+              <b class="phase-name">Review change</b>
+              <span class="actor-name">Portfolio engineer</span>
+              <span class="tool-name">GitHub pull request</span>
+              <p class="action-text">Compare the private preview with the brief and review the tested revision.</p>
+              <p class="output-text">Decision · portfolio revision approved for merge</p>
+              <p class="tech frame-detail">A fresh commit invalidates approval. The release build uses the merged revision.</p>
+            </li>
+            <li data-kind="person" data-system="" data-human="true">
+              <b class="phase-name">Approve release</b>
+              <span class="actor-name">Portfolio release owner</span>
+              <span class="tool-name">GitHub Actions</span>
+              <p class="action-text">Approve the staged catalog image for the portfolio team’s Azure environment.</p>
+              <p class="output-text">Decision · approved image and target</p>
+              <p class="tech frame-detail">Approval binds the digest and destination to this project.</p>
+            </li>
+            <li data-kind="cloud" data-system="" data-human="false">
+              <b class="phase-name">Open the app</b>
+              <span class="actor-name">Release controller</span>
+              <span class="tool-name">Azure Container Apps</span>
+              <p class="action-text">Release Project Library so staff can find projects and editors can save notes.</p>
+              <p class="output-text">Live · Project Library</p>
+              <p class="tech frame-detail">The factory records the serving revision and rollback target, then hands the evidence to the portfolio owner.</p>
+            </li>
+          </ol>
+        </article>
+        <figure
+          class="run-scene"
+          hidden
+          aria-label="Animated software factory run"
+        >
+          <div class="scene-bar">
+            <div>
+              <span class="live-dot" aria-hidden="true"></span>Simulated run
+              <span class="run-count"></span>
+            </div>
+            <div class="scene-controls" role="group" aria-label="Walkthrough playback">
+              <button type="button" class="prev-step" aria-controls="current-scene" disabled>Previous</button>
+              <button type="button" class="next-step" aria-controls="current-scene">Next</button>
+              <button type="button" class="pause-run" aria-controls="current-scene">
+                <i aria-hidden="true"></i><span>Pause</span>
+              </button>
+              <button type="button" class="restart-run" aria-controls="current-scene">
+                <svg aria-hidden="true" width="14" height="14" viewBox="0 0 16 16"
+                  fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2 2.5v4h4 M2.2 6.3a5.5 5.5 0 1 1 .7 5.2" />
+                </svg>
+                Restart
+              </button>
+            </div>
+            <span class="sr step-announcement" role="status"></span>
+          </div>
+          <div id="current-scene">
+            <div class="scene-title">
+              <span class="stage-type"></span>
+              <h3></h3>
+            </div>
+            <div class="signal-flow">
+              <div class="actor-station">
+                <div class="signal-icon"></div>
+                <small>Actor</small><strong></strong>
+              </div>
+              <i class="wire" aria-hidden="true"></i>
+              <div class="tool-station">
+                <div class="signal-icon"></div>
+                <small>Tool or decision</small><strong></strong>
+              </div>
+              <i class="wire wire-out" aria-hidden="true"></i>
+              <div class="artifact"><small>Step result</small><b></b></div>
+            </div>
+            <p class="scene-action"></p>
+            <p class="tech scene-detail"></p>
+          </div>
+          <ol class="scene-rail" aria-label="Steps in this scenario"></ol>
+          <figcaption>
+            ◆ Human decision <span>● Automated step</span>
+          </figcaption>
+        </figure>
+        <nav class="tech tech-links" aria-label="Technical diagrams">
+          <a href="#runtime-topology">Azure deployment map</a
+          ><a href="#subagent-map">Claude Code subagents</a
+          ><a href="#build-orchestrator">Build Orchestrator</a
+          ><a href="#review-flow">Review flow</a
+          ><a href="#mcp-tools">MCP and connectors</a
+          ><a href="#run-record">Worked run</a
+          ><a href="#verification">Verification</a
+          ><a href="#policy-evaluation">Policy evaluation</a
+          ><a href="#recovery">Run recovery</a
+          ><a href="#promotion">Production release</a
+          ><a href="#legacy-cutover">Legacy cutover</a
+          ><a href="#data-access">Data access</a>
+        </nav>
+      </section>
+      <section class="section" id="users">
+        <div class="section-head">
+          <h2>Who uses the pipeline?</h2>
+          <p class="section-intro">
+            Each role sees the part of the change it owns.
+          </p>
+        </div>
+        <table class="people">
+          <caption class="sr">
+            Project roles, visible artifacts and decisions
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Role</th>
+              <th scope="col">What they see</th>
+              <th scope="col">What they do</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">Requester</th>
+              <td data-label="Sees">
+                <span class="exec">Project progress and approved preview</span
+                ><span class="tech"
+                  >The coordinator can open their project brief, shareable test
+                  summary and authorized preview.</span
+                >
+              </td>
+              <td data-label="Does">
+                <span class="exec"
+                  >Requests the change and checks the result in preview.</span
+                ><span class="tech"
+                  >Describes the expected behavior and checks the verified change in staging.</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Project sponsor</th>
+              <td data-label="Sees">
+                <span class="exec">Scope and requested permissions</span
+                ><span class="tech"
+                  >The sponsor sees proposed paths, repository, data needs and
+                  open decisions for their project.</span
+                >
+              </td>
+              <td data-label="Does">
+                <span class="exec">Authorizes the repair or feature plan.</span
+                ><span class="tech"
+                  >They approve a repair policy or plan version on a scope PR or through
+                  an email invitation that asks them to sign in.</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Engineer</th>
+              <td data-label="Sees">
+                <span class="exec">Change, tests and findings</span
+                ><span class="tech"
+                  >Assigned reviewers see the diff, exact base and candidate,
+                  protected test outcomes and advisory findings.</span
+                >
+              </td>
+              <td data-label="Does">
+                <span class="exec">Reviews the verified fix on its pull request.</span
+                ><span class="tech"
+                  >The assigned engineer validates the regression and approves
+                  the exact candidate on its GitHub pull request when review is required.</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Data or security owner</th>
+              <td data-label="Sees">
+                <span class="exec">Affected resource and requested access</span
+                ><span class="tech"
+                  >The owner sees the resource, its classification, proposed
+                  operations and relevant audit evidence within their
+                  remit.</span
+                >
+              </td>
+              <td data-label="Does">
+                <span class="exec">Decides who may write notes.</span
+                ><span class="tech"
+                  >They confirm the allowed operations, fields and recipients on a scope PR
+                  or through a signed-in email invitation.</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Release owner</th>
+              <td data-label="Sees">
+                <span class="exec">Staged artifact and health checks</span
+                ><span class="tech"
+                  >The release owner sees the target environment, staged digest,
+                  required approvals, smoke checks and previous healthy
+                  revision.</span
+                >
+              </td>
+              <td data-label="Does">
+                <span class="exec">Approves the production job in GitHub Actions.</span
+                ><span class="tech"
+                  >They approve the protected GitHub Actions job for that digest and target,
+                  or authorize rollback to the healthy revision.</span
+                >
+              </td>
+            </tr>
+            <tr>
+              <th scope="row">Platform on-call (optional)</th>
+              <td data-label="Sees">
+                <span class="exec">Redacted queue and incident signals</span
+                ><span class="tech"
+                  >On-call sees queue age, retries, budget signals and traces
+                  for the services they support.</span
+                >
+              </td>
+              <td data-label="Does">
+                <span class="exec"
+                  >At low volume, the owning engineer covers staffed hours. Add
+                  a rotation when workload or support hours require it.</span
+                ><span class="tech"
+                  >At low volume the owning engineer responds during agreed
+                  support hours. Add a dedicated rotation for sustained alert
+                  volume or wider coverage. A responder with the stop grant can
+                  pause automation and reconcile an interrupted attempt.</span
+                >
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p class="smallnote">
+          Festival staff see the bookings and follow-ups their app role permits.
+          Access to the factory, source code or review evidence requires a
+          separate assignment.
+        </p>
+      </section>
+      <section class="section" id="architecture">
+        <span id="azure-poc" class="anchor" aria-hidden="true"></span>
+        <div class="section-head architecture-heading">
+          <h2>Inside the Azure factory</h2>
+          <p class="architecture-lead exec">The factory takes a team’s request from an approved change to a tested app running in Azure.</p>
+        </div>
+        <figure
+          class="factory-map exec"
+          aria-label="Azure factory architecture and artifact handoffs"
+        >
+          <ol class="pipeline">
+            <li>
+              <div class="transfer">
+                <span class="node-icon"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.65"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="M7 3h9l5 5v17H7z M16 3v6h5 M10 13h8 M10 17h8 M10 21h5"
+                    /></svg></span
+                ><span class="transfer-label">Work request</span>
+              </div>
+              <div class="node-copy">
+                <h3>Intake</h3>
+                <p>GitHub Issues in Phase 1. A form or internal API could feed the same workflow later.</p>
+              </div>
+            </li>
+            <li>
+              <div class="transfer">
+                <span class="node-icon"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.65"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="3" y="4" width="7" height="7" rx="1" />
+                    <rect x="18" y="4" width="7" height="7" rx="1" />
+                    <rect x="11" y="19" width="7" height="6" rx="1" />
+                    <path d="M6.5 11v4h15v-4 M14.5 15v4" /></svg></span
+                ><span class="transfer-label">Scoped task</span>
+              </div>
+              <div class="node-copy">
+                <h3>Build Orchestrator</h3>
+                <p>Shared TypeScript service on Azure. Starts approved jobs, saves progress and enforces retry limits without an LLM.</p>
+              </div>
+            </li>
+            <li>
+              <div class="transfer">
+                <span class="node-icon"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.65"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <rect x="2.5" y="5" width="23" height="18" rx="2" />
+                    <path d="m7 11 4 3-4 3 M14 17h6" /></svg></span
+                ><span class="transfer-label">Candidate patch</span>
+              </div>
+              <div class="node-copy">
+                <h3>Claude Code worker</h3>
+                <p>Edits the app in an Azure sandbox and calls the specialists the change needs.</p>
+                <dl class="subagent-tree" id="executive-subagents">
+                  <dt>Phase 1 · Read-only subagents</dt>
+                  <dd>Discovery</dd>
+                  <dd>Code review</dd>
+                  <dd>Security &amp; data access</dd>
+                  <dd>UX &amp; accessibility</dd>
+                </dl>
+              </div>
+            </li>
+            <li>
+              <div class="transfer">
+                <span class="node-icon"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.65"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="m14 2.5 10 4v7.2c0 5.4-5 9.4-10 12-5-2.6-10-6.6-10-12V6.5z M8.8 13.5l3.4 3.4 7-7"
+                    /></svg></span
+                ><span class="transfer-label">Test evidence</span>
+              </div>
+              <div class="node-copy">
+                <h3>Independent verifier</h3>
+                <p>A CI job runs protected tests in a second sandbox without a Claude session.
+                  <a href="#faq-independent-testing">See the Hall B test.</a></p>
+              </div>
+            </li>
+            <li>
+              <div class="transfer">
+                <span class="node-icon"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.65"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <circle cx="7" cy="5" r="2.5" />
+                    <circle cx="7" cy="23" r="2.5" />
+                    <circle cx="21" cy="7" r="2.5" />
+                    <path d="M7 7.5v13 M21 9.5v3.3c0 4-4 5-8 5H7" /></svg></span
+                ><span class="transfer-label">Merged revision</span>
+              </div>
+              <div class="node-copy">
+                <h3>GitHub review</h3>
+                <p>Review the diff and evidence before merging.</p>
+              </div>
+            </li>
+            <li>
+              <div class="transfer">
+                <span class="node-icon"
+                  ><svg
+                    aria-hidden="true"
+                    focusable="false"
+                    viewBox="0 0 28 28"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.65"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  >
+                    <path
+                      d="m3 10 11-6 11 6-11 6z M3 10v10l11 6 11-6V10 M14 16v10 M8 7l11 6"
+                    /></svg></span
+                ><span class="transfer-label">Serving revision</span>
+              </div>
+              <div class="node-copy">
+                <h3>Azure release</h3>
+                <p>Stage the merged build and promote the approved image.</p>
+              </div>
+            </li>
+          </ol>
+          <figcaption class="map-notes">
+            <div>
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 28 28"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.65"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <ellipse cx="14" cy="6" rx="9" ry="3.5" />
+                <path d="M5 6v15c0 5 18 5 18 0V6 M5 13c0 5 18 5 18 0" />
+              </svg>
+              <p>
+                <b>Two temporary sandboxes per successful first attempt</b>One builds and one tests.
+                A repair followed by another test brings the total to four. <a href="#faq-sandbox-count">What counts as a sandbox?</a>
+              </p>
+            </div>
+            <div>
+              <svg
+                aria-hidden="true"
+                focusable="false"
+                viewBox="0 0 28 28"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.65"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="2.5" y="4" width="23" height="20" rx="2" />
+                <path d="M3 10h22 M7 7h.2 M10 7h.2 M7 15h13 M7 19h8" />
+              </svg>
+              <p>
+                <b>Generated app data</b>The booking system owns the screening time and delivery status.
+                Screening Desk owns follow-up assignments and notes. Phase 2 adds ERP ticket reads.
+              </p>
+            </div>
+          </figcaption>
+        </figure>
+        <section id="runtime-topology" class="tech" aria-labelledby="deployment-map-title">
+          <h3 id="deployment-map-title" class="sr">Azure deployment map</h3>
+          <p class="architecture-lead">The Build Orchestrator starts Claude Code in an Azure Container Apps sandbox.
+            Independent CI tests its patch in a fresh sandbox before an engineer reviews it in GitHub.</p>
+          <figure class="run-map" aria-label="Screening Desk delivery path and Claude Code subagents">
+            <div class="run-map-row">
+              <h4><svg aria-hidden="true" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/>
+                <path d="M4 5v13c0 4 16 4 16 0V5 M4 11c0 4 16 4 16 0"/></svg>Queue the change</h4>
+              <ol>
+                <li><strong>Intake API → work request</strong><p>In Phase 1, verify the GitHub webhook, repository
+                  and requester. A future form or service API could create the same record.</p></li>
+                <li><strong>PostgreSQL + pg-boss</strong><p>Once scope or repair policy authorizes
+                  the work, commit the run, audit event and dispatch job together.</p></li>
+                <li><strong>Build Orchestrator</strong><p>Claim a lease, pin the repository
+                  revision and deliver the source snapshot and a short-lived grant.</p></li>
+              </ol>
+            </div>
+            <div class="sandbox-branch" id="subagent-map">
+              <h4>Claude Code worker · coding sandbox</h4>
+              <p>The builder edits a local copy of the approved revision. Its model calls go through
+                the factory gateway to Microsoft Foundry. Approved data reads go through MCP.</p>
+              <dl class="subagent-tree">
+                <dt>Phase 1 · Read-only subagents</dt>
+                <dd>Discovery<span>Before coding, trace booking IDs from the export into the register.</span></dd>
+                <dd>Code review<span>Check whether importing the same shift twice duplicates assignments.</span></dd>
+                <dd>Security &amp; data access<span>Check whether a viewer can write a handoff note.</span></dd>
+                <dd>UX &amp; accessibility<span>Try the shift handoff using only the keyboard.</span></dd>
+              </dl>
+            </div>
+            <div class="run-map-row">
+              <h4><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/>
+                <path d="m6 9 3 3-3 3m6 1h5"/></svg>Verify the patch</h4>
+              <ol>
+                <li><strong>Candidate patch</strong><p>The builder returns its changes and the findings
+                  from the specialists it called.</p></li>
+                <li><strong>GitHub broker</strong><p>Recheck sponsor access and allowed paths.
+                  Apply the patch to the work branch and open a PR with that head revision.</p></li>
+                <li><strong>Independent CI test runner</strong><p>Fetch the base and PR head into a
+                  fresh sandbox. Run the same protected tests without an LLM and save the report in private Blob Storage.</p></li>
+              </ol>
+            </div>
+            <div class="run-map-row">
+              <h4><svg aria-hidden="true" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5zM3 7v10l9 5 9-5V7M12 12v10"/></svg>Release and serve</h4>
+              <ol>
+                <li><strong>Trusted build</strong><p>After engineer review and merge, build the
+                  merged revision. Push the image to Azure Container Registry and record its digest.</p></li>
+                <li><strong>Staging revision</strong><p>Smoke-test that digest with staging
+                  data. The release owner checks the digest and Azure target in the GitHub Actions deployment review.</p></li>
+                <li><strong>Screening Desk</strong><p>The release identity promotes that image
+                  to Container Apps. The app reads the booking feed and stores shift assignments and notes in Azure SQL.</p></li>
+              </ol>
+            </div>
+            <figcaption>
+              After a broad change, the three reviewers can work in parallel. A scoped bug fix can go
+              directly from builder to verification.
+              <a href="#faq-claude-subagents">Which specialists does a change need?</a>
+            </figcaption>
+          </figure>
+        </section>
+        <section id="build-orchestrator" class="tech technical-section">
+          <span id="factory-coordinator" class="anchor" aria-hidden="true"></span>
+          <h3 id="azure-controller">What does the Build Orchestrator decide?</h3>
+          <p class="diagram-intro">
+            The orchestrator is a TypeScript service on Azure Container Apps. It takes approved work from one queue, whichever channel submitted it.
+            Its workflow rules run without an LLM. A coding attempt may last minutes while an access decision takes a day. The orchestrator
+            keeps the task and approval history in PostgreSQL so it can release the sandbox, then
+            resume with the owner’s current grant. GitHub keeps the pull request and its review.
+          </p>
+          <ol class="sequence" aria-label="How the orchestrator dispatches and resumes work">
+            <li><span class="seq-station" aria-hidden="true"></span>
+              <h4>Claim and authorize</h4><p>Claim the current attempt in PostgreSQL.
+                Confirm dependencies, current sponsor access and remaining budget. For a
+                changed permission scope, hold dispatch for a new owner decision.</p></li>
+            <li><span class="seq-station" aria-hidden="true"></span>
+              <h4>Dispatch and checkpoint</h4><p>The orchestrator uses its managed identity to create a sandbox.
+                Give Claude Code the pinned source, approved tools and expiry. Record the candidate
+                revision before queuing verification. GitHub writes go through the broker.</p></li>
+            <li><span class="seq-station" aria-hidden="true"></span>
+              <h4>Reconcile a retry</h4><p>If the orchestrator loses the reply after the broker opens a PR,
+                the next attempt checks GitHub using the original operation ID. It records the existing
+                PR before continuing. Late results from the old attempt are rejected.</p></li>
+          </ol>
+          <p class="consequence">
+            The recorded states for this path are <code>queued → running → verifying →
+            awaiting_review</code>. A run waiting for review releases its sandbox.
+            Proposed beta limits are one writable run per project, two concurrent
+            generation runs across the workspace and 20 minutes per generation attempt.
+          </p>
+        </section>
+        <section id="review-flow" class="tech technical-section">
+          <h3>When does a beta change need an engineer?</h3>
+          <figure class="review-tree" aria-labelledby="flow-entry">
+            <figcaption id="flow-entry"><strong>Work request arrives</strong><br>
+              The Build Orchestrator checks the requested change against its approved scope.</figcaption>
+            <ul>
+              <li><b>Scope or access is missing</b>
+                <p>The request asks for a write to a read-only legacy feed. Pause for the data owner’s grant
+                  or the sponsor’s change of scope. Recheck before starting Claude.</p></li>
+              <li class="has-outcomes"><div class="branch"><b>Work is authorized</b>
+                <p>Claude Code edits and calls the relevant specialists. The independent CI runner tests the patch in a fresh sandbox.</p></div>
+                <ul>
+                  <li><b>Checks pass</b><p>An engineer reviews the tested revision on the PR.
+                    After merge and staging, the release owner approves production.</p></li>
+                  <li><b>A check fails</b><p class="repair-return"><span aria-hidden="true">↺</span> One repair, then verify again</p>
+                    <p>Claude gets the failed check. If its repair fails or the budget runs out,
+                      stop and ask an engineer.</p></li>
+                </ul>
+              </li>
+            </ul>
+          </figure>
+        </section>
+        <section id="mcp-tools" class="tech technical-section">
+          <h3>How does MCP connect the agent to business systems?</h3>
+          <p class="diagram-intro">
+            Model Context Protocol (MCP) lets Claude discover and call named tools with typed arguments. The orchestrator grants tools per run. The MCP server authorizes each call before an adapter queries a database, legacy app, knowledge base, ERP or external API. Beta grants read access. Write tools would need separate approval and retry rules.
+          </p>
+          <p><a href="#faq-connector-catalog">Tool catalog and permitted results for six backing systems</a></p>
+          <div class="tool-example">
+            <h4>A legacy schedule call from the coding sandbox</h4>
+            <pre><code>tools/call
+name       get_schedule_sample
+arguments  {"festival_id":"F17","limit":1}
+result     {"booking":"F17-42","hall":"B","starts_at":"18:30",
+            "master_due":"16:00","master_status":"missing"}</code></pre>
+          </div>
+          <p>
+            For festival F17, the server checks token audience, expiry, project, tool and festival. Another festival returns a denial and zero rows. The broker keeps the source credential and logs the run ID, tool, decision and duration. <a href="https://modelcontextprotocol.io/specification/2025-11-25/server/tools">MCP tool protocol</a>
+          </p>
+          <p class="consequence">
+            To add a connector, register its schema, allowed operation, credential and returned fields. Test an authorized read, a denied read and a timeout.
+          </p>
+        </section>
+        <section id="run-record" class="tech technical-section">
+          <h3>Trace one change from request to production</h3>
+          <p class="diagram-intro">
+            In this Phase 2 example, run <code>SD-42</code> links an ERP ticket lookup to its test report and production release. The identifiers below are illustrative.
+          </p>
+          <div class="run-records">
+            <article><h4>Dispatch · PostgreSQL</h4>
+              <pre><code>issue    intake#42
+run      SD-42
+plan     handoff/v3
+base     8c31b67
+attempt  1</code></pre>
+              <p>
+            The sponsor-approved plan names the permitted ERP fixture tool.
+          </p></article>
+            <article><h4>Evidence · private Blob</h4>
+              <pre><code>run      SD-42
+base     8c31b67
+PR head  521bfa9
+report   SD-42/verify-1</code></pre>
+              <p>
+            The assigned coordinator reopens WO-1042. A viewer’s write fails. A new PR head requires fresh evidence.
+          </p></article>
+            <article><h4>Promotion · release record</h4>
+              <pre><code>run      SD-42
+merge    94b73e2
+digest   sha256:9e4c…13a7
+target   screening-desk-prod</code></pre>
+              <p>
+            Before routing traffic, the deployer matches the staged digest and target to the approval.
+          </p></article>
+          </div>
+        </section>
+        <section id="verification" class="tech technical-section">
+          <h3>How does the verifier prove the fix?</h3>
+          <p class="diagram-intro">
+            The verifier is a CI test runner. Freeze the clock at 16:15. Hall B’s master was due at 16:00.
+            Run the same protected assignment test on the original and patched revisions.
+          </p>
+          <ol class="sequence">
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Base revision</span>
+              <h4>Assignment hides the blocker</h4>
+              <p>
+            The base returns zero overdue bookings. The fixture expects one.
+          </p>
+            </li>
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Candidate revision</span>
+              <h4>Hall B stays visible</h4>
+              <p>
+            The candidate keeps Hall B visible. Recording receipt clears it.
+          </p>
+            </li>
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Evidence record</span>
+              <h4>Review this revision</h4>
+              <p>
+            The report ties the fixture version and both results to their revision IDs.
+          </p>
+            </li>
+          </ol>
+          <p class="consequence">
+            A new commit triggers fresh verification. Merge requires evidence and approval for the current head.
+            <a href="#faq-independent-testing">Is the test runner another Claude agent?</a>
+          </p>
+        </section>
+        <section id="policy-evaluation" class="tech technical-section">
+          <h3>How do we test a change to the factory?</h3>
+          <p class="diagram-intro">Before changing automatic merge, replay both policy versions on the same
+            labeled cases, including past incidents and held-out changes. Log every decision and measure reviewer time.</p>
+          <table class="data-map">
+            <caption>Illustrative replay of 20 changes</caption>
+            <thead><tr><th scope="col">Outcome</th><th scope="col">Current rule</th><th scope="col">Proposed rule</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Unsafe changes allowed</th><td>0 of 8</td><td>1 of 8</td></tr>
+              <tr><th scope="row">Safe changes blocked from automatic merge</th><td>3 of 12</td><td>1 of 12</td></tr>
+              <tr><th scope="row">Total reviewer time</th><td>86 minutes</td><td>53 minutes</td></tr>
+            </tbody>
+          </table>
+          <p class="consequence"><strong>Keep the current rule.</strong> The proposed rule trusted a “typo”
+            label on a permissions change. Inspect the diff, then retest the revised rule on fresh cases.</p>
+        </section>
+        <section id="recovery" class="tech technical-section">
+          <h3>What happens if the orchestrator stops?</h3>
+          <p class="diagram-intro">
+            GitHub creates a draft PR. The orchestrator stops before saving its number. How can the next attempt recover?
+          </p>
+          <ol class="sequence">
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Attempt A</span>
+              <h4>Lease expires</h4>
+              <p>
+            A lease gives one attempt a time-limited claim. Expiry frees the saved work item for recovery.
+          </p>
+            </li>
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Build Orchestrator</span>
+              <h4>Reconcile the write</h4>
+              <p>
+            The broker looks up the branch and PR by operation ID. It records the result or waits for confirmation.
+          </p>
+            </li>
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Attempt B</span>
+              <h4>Resume the work item</h4>
+              <p>
+            The orchestrator rechecks sponsor access and the current revision. It starts a fresh sandbox if more coding is needed.
+          </p>
+            </li>
+          </ol>
+          <p class="consequence">
+            Both attempts use <code>SD-42/open-pr/1</code>. An uncertain result holds the step.
+          </p>
+          <p>PostgreSQL and pg-boss commit the checkpoint and next job together. <a href="#faq-postgresql">Why choose PostgreSQL for recovery?</a></p>
+        </section>
+        <section id="promotion" class="tech technical-section">
+          <h3>Which build reaches production?</h3>
+          <p class="diagram-intro">
+            Build the merged commit once. Its digest identifies the image through staging and production.
+          </p>
+          <ol class="sequence">
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Staging</span>
+              <h4>Test the image</h4>
+              <p>
+            Exercise the overdue-booking workflow and staff roles with staging data. Record the tested digest.
+          </p>
+            </li>
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Release gate</span>
+              <h4>Match the digest</h4>
+              <p>
+            The release owner approves the digest and target in GitHub Actions. The deployer checks both against staging.
+          </p>
+            </li>
+            <li>
+              <span class="seq-station" aria-hidden="true"></span
+              ><span class="label">Azure revision</span>
+              <h4>Observe first traffic</h4>
+              <p>
+            Send a small share of traffic to the new revision. Two consecutive failed smoke checks restore the previous healthy revision.
+          </p>
+            </li>
+          </ol>
+          <p class="consequence">
+            Database migrations need separate approval and a tested restore or forward fix.
+          </p>
+        </section>
+        <section id="legacy-cutover" class="tech cutover-note">
+          <h3>When staff switch to Screening Desk</h3>
+          <p>During beta, staff keep entering updates in the legacy tracker. At cutover, the operator freezes edits
+            and reconciles every open issue and note. The shift lead signs off before staff start writing in Screening Desk.</p>
+          <p><a href="#faq-cutover-checks">Cutover checks and recovery</a></p>
+        </section>
+        <div class="tech technical-section" id="data-access">
+          <h3>Which identity can reach each data source?</h3>
+          <p class="diagram-intro">
+            In the released app, a ticket-change event can start a handoff.
+            When the coordinator opens it, Screening Desk reads current status
+            using its runtime grant and saves the confirmed note in its own database.
+          </p>
+          <table class="data-map">
+            <caption class="sr">
+              Data paths and the identities that can use them
+            </caption>
+            <thead>
+              <tr>
+                <th>Caller</th>
+                <th>Permitted operation</th>
+                <th>Destination</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th>Legacy schedule adapter</th>
+                <td>Read approved screenings</td>
+                <td>Legacy festival programming system</td>
+              </tr>
+              <tr>
+                <th>App runtime for authorized staff</th>
+                <td>Assign a follow-up owner and save a screening note</td>
+                <td>App-owned Azure SQL</td>
+              </tr>
+              <tr>
+                <th>RAG retrieval broker</th>
+                <td>Return permitted document excerpts with citations</td>
+                <td>Approved runbooks and connector contracts</td>
+              </tr>
+              <tr>
+                <th>Custom ERP connector</th>
+                <td>Read hall-scoped maintenance ticket fields</td>
+                <td>Custom ERP</td>
+              </tr>
+              <tr>
+                <th>ERP event publisher</th>
+                <td>Notify an approved hall of a ticket change</td>
+                <td>Screening Desk event receiver and pending handoff inbox</td>
+              </tr>
+              <tr>
+                <th>Build Orchestrator</th>
+                <td>Checkpoint a run and enqueue work</td>
+                <td>Factory PostgreSQL and pg-boss</td>
+              </tr>
+            </tbody>
+          </table>
+          <p class="consequence">
+            Each MCP call requires a current grant for that project, tool and
+            resource. A revoked grant stops the next read. The overdue-list
+            repair and independent verification run on local fixtures.
+          </p>
+        </div>
+      </section>
+      <section class="section" id="security">
+        <span id="review" class="anchor" aria-hidden="true"></span
+        ><span id="risk-routing" class="anchor" aria-hidden="true"></span>
+        <div class="section-head">
+          <h2>Security guardrails</h2>
+        </div>
+        <section id="agent-authority" class="comparison">
+          <h3>How much authority does the agent have?</h3>
+          <dl>
+            <div><dt>Copy correction</dt><dd>After a trial, the team can enable automatic merge for verified
+              label fixes in this repository.</dd></div>
+            <div><dt>Hall B logic repair</dt><dd>The agent prepares the fix. An engineer reviews the
+              independently verified patch before merge.</dd></div>
+            <div><dt>Schema migration</dt><dd>The agent drafts it. The database owner approves the plan and
+              tested recovery procedure before authorizing production execution.</dd></div>
+          </dl>
+          <p>If a permissions change passes as a copy correction, suspend automatic merge and route that class to engineers.</p>
+        </section>
+        <div class="guards">
+          <article class="guard">
+            <h3>Project access</h3>
+            <p>A forwarded preview link from another project is denied.</p>
+            <p class="tech">
+              The server checks current membership, role and permission on every
+              read, including previews and protected evidence.
+            </p>
+          </article>
+          <article class="guard">
+            <h3>Worker tools</h3>
+            <p>
+              The coding sandbox has read-only access to approved samples for the legacy schedule and ERP ticket.
+            </p>
+            <p class="tech">
+              The sandbox receives a pinned snapshot and expiring tools for
+              named operations. Instructions in tickets or retrieved text cannot
+              expand the grant. The gateway stops new calls when the run budget
+              is exhausted.
+            </p>
+          </article>
+          <article class="guard">
+            <h3>Merge</h3>
+            <p>A new commit makes the previous review stale.</p>
+            <p class="tech">
+              Protected checks and approvals must match the current base and candidate.
+              A permissions change escalates to engineering and the data owner.
+            </p>
+          </article>
+          <article class="guard">
+            <h3>Production</h3>
+            <p>A different image digest holds the release.</p>
+            <p class="tech">
+              GitHub Actions waits for release approval. The deployer matches its digest and target to the staged image.
+            </p>
+          </article>
+        </div>
+        <div class="tech detail">
+          <p>
+            Each preview, diff and trace checks the reader’s access. Operational logs exclude raw prompts,
+            source, credentials and staff notes.
+          </p>
+        </div>
+      </section>
+      <div class="section ops">
+        <section id="cost">
+          <h2>What drives cost?</h2>
+          <ul class="list">
+            <li>
+              <b>Build</b
+              ><span>Team time to build and verify the factory.</span>
+            </li>
+            <li>
+              <b>Operate</b><span>Shared compute, storage and monitoring.</span>
+            </li>
+            <li>
+              <b>Run a change</b
+              ><span>Model usage and sandbox time per attempt.</span>
+            </li>
+          </ul>
+          <p class="smallnote">
+            A retry adds model and compute cost even if it produces no accepted
+            change.
+          </p>
+          <div class="tech detail">
+            <p>
+              During beta, divide measured cloud spend by accepted changes and
+              track reviewer time separately. Infrastructure and support
+              continue while feedback is open.
+            </p>
+          </div>
+        </section>
+        <section id="observability">
+          <span id="monitoring" class="anchor" aria-hidden="true"></span>
+          <h2>Who responds?</h2>
+          <ul class="list">
+            <li>
+              <b>Late preview</b
+              ><span
+                >The assigned engineer or on-call responder checks queue age and
+                retries.</span
+              >
+            </li>
+            <li>
+              <b>Slow schedule</b
+              ><span
+                >The app and connector owners trace the schedule read.</span
+              >
+            </li>
+            <li>
+              <b>Failed canary</b
+              ><span>The release owner restores the healthy revision.</span>
+            </li>
+          </ul>
+          <div class="tech detail">
+            <p>
+              OpenTelemetry and Azure Monitor link each dispatch attempt to its
+              work item. Separate time waiting for a sponsor from time spent in
+              the runnable queue. App traces identify the serving revision and
+              dependency timings. Protected gate records retain every release
+              decision.
+            </p>
+          </div>
+        </section>
+      </div>
+      <section class="section" id="delivery">
+        <span id="forecast" class="anchor" aria-hidden="true"></span>
+        <div class="section-head">
+          <h2>Phase 1 · Working beta around Week 10</h2>
+          <p class="section-intro">
+            One team, one legacy export, one read-only booking feed and an app-owned database.
+            Both checks must pass to open the beta.
+          </p>
+        </div>
+        <section id="beta-acceptance" class="comparison">
+          <h3>Week 10 beta acceptance test</h3>
+          <dl>
+            <div><dt>Build the replacement</dt><dd>The factory generates Screening Desk. In preview, the shift
+              lead imports 24 sample issues twice. All owners and notes match, with zero duplicates.
+              The incoming coordinator can update an imported issue.</dd></div>
+            <div><dt>Maintain the app</dt><dd>A coordinator files the Hall B bug in GitHub. The same factory
+              delivers a fix. The verifier’s check fails on the original and passes on the patch. In the updated
+              preview, Hall B stays overdue after assignment.</dd></div>
+          </dl>
+        </section>
+        <figure
+          class="chart"
+          aria-label="Phase 1 delivery timeline and additional time for a Phase 2 extension"
+        >
+          <div class="chart-row">
+            <span class="label">Weeks from kickoff</span>
+            <div class="axis" aria-hidden="true">
+              <span>1</span><span style="grid-column: 4">4</span
+              ><span style="grid-column: 7">7</span
+              ><span style="grid-column: 10">10</span>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div>
+              <h3>Discovery and access</h3>
+              <span class="when">Weeks 1–3</span>
+            </div>
+            <div class="track" aria-hidden="true">
+              <i class="bar" style="grid-column: 1 / 4"></i>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div>
+              <h3>Build and verify the beta</h3>
+              <span class="when">Weeks 4–9</span>
+            </div>
+            <div class="track" aria-hidden="true">
+              <i class="bar" style="grid-column: 4 / 10"></i>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div>
+              <h3>Beta live with feedback</h3>
+              <span class="when">Week 10 onward</span>
+            </div>
+            <div class="track" aria-hidden="true">
+              <i class="bar beta" style="grid-column: 10 / 13"></i>
+            </div>
+          </div>
+          <div class="chart-row">
+            <div>
+              <h3>Production and handover</h3>
+              <span class="when">After feedback and monitoring sign-off</span>
+            </div>
+            <div class="after">
+              <i aria-hidden="true"></i><b>2–4 weeks after sign-off</b
+              ><span>New app live · active records reconciled · operator accepts handover</span>
+            </div>
+          </div>
+          <section class="chart-row extension" id="phase-two" aria-labelledby="phase-two-heading">
+            <div>
+              <h3 id="phase-two-heading">Phase 2 · Extend the factory</h3>
+              <span class="when">After Phase 1 handover</span>
+            </div>
+            <div>
+              <p>Choose the next connector from the work people do: a database view, a legacy app,
+                an external service or an ERP. <strong>Allow 3–5 additional weeks in the worked example</strong>
+                for a read-only maintenance-ticket lookup once its contract, owner and test access are ready.</p>
+              <ol class="extension-weeks" aria-label="ERP lookup estimate">
+                <li><b>1 week</b>Confirm fields and access</li>
+                <li><b>1–2 weeks</b>Build the lookup</li>
+                <li><b>1–2 weeks</b>Test and release</li>
+              </ol>
+              <p class="tech">An event that starts the handoff or onboarding the portfolio
+                team adds time beyond this estimate.</p>
+            </div>
+          </section>
+        </figure>
+        <div class="forecast-drivers">
+          <h3>What can move the dates?</h3>
+          <p>
+            <strong>Access to information is the biggest schedule risk.</strong> The team needs source
+            contracts, representative records and business owners who can explain rules and exceptions.
+            A two-week access delay moves beta from Week 10 to Week 12.
+          </p>
+          <p class="tech">
+            The six-week build assumes a full-time technical lead, half-time platform engineer and existing Azure
+            landing zone. Reforecast at Week 3 if the starter, network access or sample records are missing.
+          </p>
+          <table class="people risk-table">
+            <caption class="sr">What speeds up or delays each milestone</caption>
+            <thead><tr><th scope="col">Milestone</th><th scope="col">What speeds delivery up</th><th scope="col">What slows it down</th></tr></thead>
+            <tbody>
+              <tr><th scope="row">Discovery</th><td data-label="Faster">A source owner walks through a real issue and its export.</td><td data-label="Slower">Missing records or undocumented exceptions stall integration.</td></tr>
+              <tr><th scope="row">First build</th><td data-label="Faster">Reserve Azure capacity and approve repository access early.</td><td data-label="Slower">Quota limits, private networking or missing grants block the worker.</td></tr>
+              <tr><th scope="row">Beta</th><td data-label="Faster">One stable connector, tested fixtures and dedicated engineers.</td><td data-label="Slower">API changes, flaky tests and competing commitments delay a usable preview.</td></tr>
+              <tr><th scope="row">Sign-off</th><td data-label="Faster">Staff try real requests and engineers review the evidence.</td><td data-label="Slower">Absent reviewers, access failures or high retry costs extend beta.</td></tr>
+              <tr><th scope="row">Handover</th><td data-label="Faster">A named responder rehearses restore and rollback.</td><td data-label="Slower">A failed restore or missing support coverage holds release.</td></tr>
+            </tbody>
+          </table>
+          <p><a href="#faq-delivery-risks">See all ten schedule risks and mitigations.</a></p>
+        </div>
+      </section>
+      <section class="section" id="faq" aria-labelledby="faq-heading">
+        <div class="section-head">
+          <h2 id="faq-heading">Frequently asked questions</h2>
+          <a class="tech" href="#deployment-faq">Deployment troubleshooting</a>
+        </div>
+        <div class="faq-list">
+          <details id="faq-what-does-the-factory-add-to-github-and-azure">
+            <summary>What does the factory add to GitHub and Azure?</summary>
+            <div class="faq-answer">
+              GitHub hosts the code and review. Azure runs the workloads. The
+              factory connects the approved brief, the agent’s permissions, the
+              independent test results and the exact release so a team can
+              trace what it authorized all the way to production.
+            </div>
+          </details>
+          <details id="faq-worker-host">
+            <summary>Where does the Claude Code worker run?</summary>
+            <div class="faq-answer">
+              <p>In the proposed factory, the worker runs in a temporary Azure Container Apps sandbox in the
+                company’s subscription. It has its own copy of the approved repository revision. When it
+                returns a patch, the factory can discard the sandbox. The next attempt gets a fresh one.</p>
+              <p class="tech">The worker uses the Claude Agent SDK. Its file edits and shell commands run inside the
+                sandbox. Model requests go through the gateway to the configured Claude deployment in Microsoft
+                Foundry. The GitHub broker opens the PR and a separate verifier runs protected checks.
+                <a href="https://learn.microsoft.com/en-us/azure/container-apps/sandboxes-overview">Azure sandbox lifecycle</a>
+                · <a href="https://code.claude.com/docs/en/microsoft-foundry">Claude on Microsoft Foundry</a></p>
+            </div>
+          </details>
+          <details id="faq-orchestrator-llm">
+            <summary>Does the Build Orchestrator use an LLM?</summary>
+            <div class="faq-answer">
+              <p>No. It is a shared TypeScript service. It checks the approved scope, starts the coding
+                job, sends the patch for testing and counts attempts. When a check fails, a recorded rule
+                allows one repair within budget. If the repair fails, an engineer receives the patch and failure.
+                The shift coordinator in Screening Desk is a person using the finished app.</p>
+              <p class="tech">The orchestrator records each decision in PostgreSQL. When several reviewers
+                find problems, it can collect their findings into one work item. Claude interprets those
+                findings. The sponsor or data owner decides any change in scope or access.</p>
+            </div>
+          </details>
+          <details id="faq-claude-subagents">
+            <summary>Who runs the subagents, and which specialists does a change need?</summary>
+            <div class="faq-answer">
+              <p>In Phase 1, only the Claude Code builder edits the source. It calls read-only specialists through the Claude Agent SDK, so reviewers can inspect the same patch without changing it. For the
+                legacy replacement, discovery maps booking IDs before coding. After the patch, the code
+                reviewer looks for duplicate imports, the security reviewer checks viewer permissions,
+                and the UX reviewer tries the handoff with a keyboard. These three reviews can run in parallel.</p>
+              <p>A small query fix can use the builder and the protected regression test alone. The
+                factory defines available roles, required reviews and tool permissions. Specialists report findings to the builder. The engineer reviews the verified patch.</p>
+              <p class="tech">Each specialist gets a separate conversation in the same
+                coding sandbox. All model calls count against the same run budget. If a required review
+                is missing, the orchestrator holds the change for review.
+                <a href="#subagent-map">See the subagents in the architecture diagram.</a>
+                <a href="https://code.claude.com/docs/en/agent-sdk/subagents">Claude Agent SDK subagents</a></p>
+            </div>
+          </details>
+          <details id="faq-sandbox-count">
+            <summary>How many containers or sandboxes does one change use?</summary>
+            <div class="faq-answer">
+              <p><strong>A first-pass change uses two temporary sandboxes.</strong> The builder and up to four
+                specialists share one coding sandbox. A fresh verification sandbox then runs the tests.</p>
+              <p><strong>One repair and retest bring the total to four.</strong> The repair gets a new coding
+                sandbox and a new verification sandbox. This counts allocations over the life of one change.
+                The shared orchestrator, gateway and deployed app have their own lifetimes.</p>
+              <p class="tech">The proposed pilot allows two coding attempts at the same time across projects
+                and one writable attempt per project. A specialist requiring a different security boundary
+                would run as a separate isolated job and add to the count.</p>
+            </div>
+          </details>
+          <details id="faq-independent-testing">
+            <summary>Is the independent test runner another Claude Code agent?</summary>
+            <div class="faq-answer">
+              <p>No. It is a separate continuous integration (CI) job running without Claude. The builder
+                can run local tests while editing. The independent runner executes protected checks in a
+                clean sandbox and records which revision produced each result.</p>
+              <p>Assign an owner to Hall B while its delivery is overdue. The original code hides the
+                booking. The patched code keeps it visible until the delivery arrives. The engineer sees
+                both results from the same test before reviewing the PR.</p>
+              <p>A future test-design subagent could suggest another case, such as assigning
+                the booking twice. That suggestion can become a test. Only an executed protected check
+                supplies independent pass or fail evidence.</p>
+            </div>
+          </details>
+          <details id="faq-infinite-loops">
+            <summary>How does the factory prevent an infinite loop?</summary>
+            <div class="faq-answer">
+              <p>The pilot gives Claude 20 minutes per generation attempt and one chance to repair
+                a failed check. If Hall B still disappears after that repair, the orchestrator stops
+                and sends the failing check and patch to an engineer. The run also stops when it
+                reaches its token or spending limit.</p>
+              <p class="tech">A transient infrastructure error can trigger up to two retries. The
+                orchestrator records attempts, failures and budget usage under the run ID, so a restart
+                preserves the limits. A repeated verification failure ends automatic repair. If a
+                GitHub write timed out, the orchestrator checks whether it succeeded before retrying.</p>
+            </div>
+          </details>
+          <details id="faq-human-intervention">
+            <summary>When does the factory need human intervention?</summary>
+            <div class="faq-answer">
+              <p>A low-risk repair covered by an existing policy can start automatically. A sponsor
+                decides if the requested behavior is unclear or the scope grows. The owner of a
+                connected system approves new access, such as reading two fields from the booking feed.</p>
+              <p>When a repair still fails or a run hits its budget, an engineer reviews the patch
+                and the reason it stopped. They can close the request or revise the task for another
+                authorized attempt. During beta, an engineer reviews verified code before merge.
+                After staging passes, the release owner approves the production deployment.</p>
+              <p class="tech">A corrected patch goes through verification again. A schema change
+                also needs the database owner’s approval for the migration and recovery plan.
+                <a href="#faq-where-do-people-approve-a-change">See where each person records the decision.</a></p>
+            </div>
+          </details>
+          <details id="faq-intake-channels">
+            <summary>Can a team request a build outside GitHub?</summary>
+            <div class="faq-answer">
+              <p>Yes. The pilot uses the team’s GitHub intake repository. Later, a shift lead could sign in
+                to an internal form to report a missing Hall B booking, or an approved incident service could
+                send that report through an API. Either could create a factory request directly. Engineers
+                would still review the resulting patch on a GitHub pull request.</p>
+              <p class="tech">Each channel must identify the caller and check their right to submit for the team.
+                The intake API records the channel, source ID, requester, team and expected result. A retry
+                with the same caller, channel and source ID in that team returns the original request ID.
+                The Build Orchestrator can dispatch work only after scope approval or a matching repair policy.</p>
+            </div>
+          </details>
+          <details id="faq-where-do-people-approve-a-change">
+            <summary>Where do people approve a change?</summary>
+            <div class="faq-answer">
+              <p>The sponsor approves its scope on a pull request
+                or follows an email invitation, signs in and confirms. If the app needs new access,
+                the owner of that system approves the specific operations through either channel.</p>
+              <p>The engineer reviews the code and test results on the change’s pull request.
+                After staging passes, the release owner approves the production job in GitHub
+                Actions for the tested image and its Azure destination.</p>
+              <p class="tech">The factory records who decided, when, and which scope,
+                commit or image they reviewed. Forwarding an email gives the recipient
+                no approval rights. A changed scope, commit or image needs a new decision.
+                If the private repo’s GitHub plan lacks deployment reviewers, the release
+                owner approves a protected release PR naming the same image and target.
+                Actions deploys the approved release. Jira is optional status reporting after handover.</p>
+            </div>
+          </details>
+          <details id="faq-what-does-a-second-team-have-to-bring">
+            <summary>What does a second team have to bring?</summary>
+            <div class="faq-answer">
+              <p>The festival team uses the factory to build Screening Desk. The
+                portfolio team comes next with a request for its own app, Project
+                Library. Any portfolio user should be able to find “Depot retrofit.”
+                Only editors should be able to add a review note. The team names
+                who approves the work, who will maintain the code and who can
+                authorize access to the catalog.</p>
+              <p>The factory uses the same app template, testing tools and release process
+                to set up Project Library in its own GitHub repository and Azure
+                environment. It runs the portfolio team’s example in a private
+                preview so the team can check the result.</p>
+              <p class="tech">Project Library uses two database accounts. One can
+                read approved entries in the existing catalog. The other can save
+                notes in the app’s own database. The app checks whether the signed-in
+                user is an editor before saving. Tests check that an editor can save
+                and reopen a note, a viewer’s save is denied, and the catalog account
+                cannot change the original project record.</p>
+            </div>
+          </details>
+          <details id="faq-can-the-erp-start-an-app-workflow">
+            <summary>What can an app do with an ERP connector?</summary>
+            <div class="faq-answer">
+              <p>A released app can read or write ERP records when the system owner grants that
+                operation. Screening Desk reads a maintenance ticket and saves the handoff note
+                in its own database. Another app could have permission to update a work order in the ERP.</p>
+              <p>Staff can start a handoff themselves. If the team also subscribes to ticket
+                changes, an ERP event can open a handoff inside Screening Desk. That event goes
+                only to the running app. To change the software itself, the team submits a separate factory request.</p>
+              <p class="tech">The app uses its own runtime identity. Ticket reads, work-order updates
+                and event subscriptions require separate grants. The receiver checks the sender and
+                hall and records the event ID to avoid duplicate handoffs. The coding agent uses synthetic tickets.</p>
+            </div>
+          </details>
+          <details id="faq-when-would-the-factory-refuse-to-ship">
+            <summary>When would the factory refuse to ship?</summary>
+            <div class="faq-answer">
+              Suppose the overdue-list fix passes on revision A and someone pushes
+              revision B. The factory holds the merge, shows the engineer which
+              checks need repeating and requires fresh evidence for B.
+              <p class="tech">After merge, the release controller checks the image
+                built and tested in staging. It can promote only the digest the
+                release owner approved for that environment.</p>
+            </div>
+          </details>
+          <details id="faq-what-does-week-10-cover">
+            <summary>What does Week 10 cover?</summary>
+            <div class="faq-answer">
+              The beta opens once the team can use the generated replacement and get a verified fix through
+              the same factory. The old tracker stays in use during feedback and monitoring. After sign-off,
+              allow 2–4 weeks for the final import, production switch and operator handover to complete Phase 1.
+              <p class="tech">Sign-off at the end of Week 12 puts handover in Weeks 14–16. If ERP access
+                is ready then, a 3–5 week lookup could ship in Weeks 17–21.</p>
+            </div>
+          </details>
+          <details id="faq-delivery-risks">
+            <summary>Which ten risks should the team track through delivery?</summary>
+            <div class="faq-answer faq-wide">
+              <table class="people risk-table">
+                <caption class="sr">
+                  Schedule drivers by affected milestone
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Milestone and driver</th>
+                    <th scope="col">What speeds delivery up</th>
+                    <th scope="col">What slows it down</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row"><small>Beta opening · biggest risk</small>Access to information</th>
+                    <td data-label="Faster">
+                      In Week 1, map an open issue with the operations lead. Check its owner and notes survive export and the booking feed supplies its due time and receipt status.
+                    </td>
+                    <td data-label="Slower">
+                      If receipt status lives only in emails, the app cannot reliably identify overdue
+                      masters from the booking feed. Resolve the data source and revisit the estimate.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><small>Beta opening</small>Cloud access</th>
+                    <td data-label="Faster">
+                      Run one real coding task early in the approved region.
+                    </td>
+                    <td data-label="Slower">
+                      Missing model quota, private DNS or sandbox capacity can block
+                      the first end-to-end run.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">
+                      <small>Beta opening</small>Repository and identity
+                    </th>
+                    <td data-label="Faster">
+                      Approve the starter repository, delegated writes and branch
+                      rules together.
+                    </td>
+                    <td data-label="Slower">
+                      Waiting for an installation owner or redesigning permissions
+                      delays the first reviewable change.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><small>Beta opening</small>Data integration</th>
+                    <td data-label="Faster">
+                      Agree on one read connector, a stable contract and
+                      representative fixtures.
+                    </td>
+                    <td data-label="Slower">
+                      A changing API, sensitive fields or a second data owner can
+                      reopen scope and access review.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row"><small>Beta opening</small>Build quality</th>
+                    <td data-label="Faster">
+                      Start with a maintained template and repeatable browser tests.
+                    </td>
+                    <td data-label="Slower">
+                      Flaky checks and missing test data force engineers to
+                      investigate whether the app or the verifier failed.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">
+                      <small>Beta opening</small>Engineering capacity
+                    </th>
+                    <td data-label="Faster">
+                      Reserve engineer time for integration and review. Make
+                      independent access requests in parallel.
+                    </td>
+                    <td data-label="Slower">
+                      Shared staff, serial approvals or adding another framework
+                      consume the six-week build allowance.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">
+                      <small>Production sign-off</small>Beta participation
+                    </th>
+                    <td data-label="Faster">
+                      Schedule real work with two sponsors and collect feedback in
+                      the preview.
+                    </td>
+                    <td data-label="Slower">
+                      Too few representative requests or unavailable reviewers
+                      extend the observation period.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">
+                      <small>Production sign-off</small>Security and evidence
+                    </th>
+                    <td data-label="Faster">
+                      Exercise revoked access, stale approvals and isolation checks
+                      during the build.
+                    </td>
+                    <td data-label="Slower">
+                      An unauthorized write or missing evidence holds release until
+                      the fix passes independent checks.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">
+                      <small>Production sign-off</small>Operating load and cost
+                    </th>
+                    <td data-label="Faster">
+                      Measure queue age, retries and cost per accepted change on
+                      representative traffic.
+                    </td>
+                    <td data-label="Slower">
+                      Throttling, expensive retries or a backlog can require
+                      capacity or budget changes before wider use.
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">
+                      <small>Production sign-off</small>Recovery and ownership
+                    </th>
+                    <td data-label="Faster">
+                      Rehearse rollback and restore in staging. Agree on support
+                      hours and name a responder.
+                    </td>
+                    <td data-label="Slower">
+                      A failed restore, noisy alerts or an uncovered support window
+                      can hold production handover.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+          <details id="faq-what-comes-after-the-first-production-release">
+            <summary>What comes after the first production release?</summary>
+            <div class="faq-answer">
+              <p>Start with the question staff keep leaving the app to answer. A ticket might come
+                from an ERP, an asset record from a database view, or a delivery update from a partner API.
+                The factory can also build the next team’s app using the same starter and release process.</p>
+              <p class="tech">For the ERP example, accept the lookup when a coordinator can read the assigned
+                hall’s ticket, another hall’s ticket is denied, and an ERP outage still
+                allows a plain note. Add event delivery when staff need automatic handoffs.
+                Trial indexed search, extra agents or automatic merging when reviews
+                show where the existing process costs time. Jira can mirror status.</p>
+            </div>
+          </details>
+          <details id="faq-when-does-an-ai-app-builder-fit">
+            <summary>Why did the organization choose a software factory?</summary>
+            <div class="faq-answer">
+              <p>Consider one shift handoff. The legacy booking system owns the screening time,
+                the ERP owns the maintenance ticket, and Screening Desk owns the coordinator’s
+                note. Each owner decides what staff can read or change. The organization chose
+                the factory so its engineers can adapt each integration as those rules evolve.</p>
+              <p class="tech">If the ERP changes a ticket field, an engineer can update its
+                adapter in GitHub. The verifier checks that the coordinator can read Hall B’s
+                ticket, that another hall’s ticket is denied, and that staff can still save
+                a plain note during an ERP outage. The release owner approves the tested
+                image for the app’s Azure environment.</p>
+            </div>
+          </details>
+          <details id="faq-how-will-we-know-which-parts-to-reuse">
+            <summary>How will we know which parts to reuse?</summary>
+            <div class="faq-answer">
+              Start with templates, tests and runbooks from prior factory work.
+              Try them on a representative request under this organization’s
+              permissions. During beta, compare time to a verified preview,
+              engineer review time and escaped defects with similar manual changes.
+            </div>
+          </details>
+          <details id="faq-cutover-checks" class="tech">
+            <summary>What happens to open issues when staff switch apps?</summary>
+            <div class="faq-answer faq-wide">
+              <ol class="sequence">
+                <li><span class="seq-station" aria-hidden="true"></span><span class="label">Map and rehearse</span><h4>Follow one open issue</h4>
+                  <p>Map legacy issue 108 to booking F17-42, its owner, due time and latest note. Rehearse with an
+                    approved export in restricted staging. The agent develops against synthetic examples.</p></li>
+                <li><span class="seq-station" aria-hidden="true"></span><span class="label">Compare and decide</span><h4>Account for every open item</h4>
+                  <p>Compare the source and target by issue ID and fields. Re-importing the same export must produce
+                    zero duplicates. An unknown owner, orphan booking or missing note holds the switch for the operations lead.</p></li>
+                <li><span class="seq-station" aria-hidden="true"></span><span class="label">Switch the team</span><h4>Use one writable register</h4>
+                  <p>The operator freezes old edits, imports the final export and repeats the checks. The lead accepts
+                    the first shift in the new app. If checks fail, reopen the old tracker. After staff begin writing in
+                    the new app, preserve and reconcile those changes before any switch back.</p></li>
+              </ol>
+            </div>
+          </details>
+          <details id="faq-connector-catalog" class="tech">
+            <summary>Which MCP tools would each backing system expose?</summary>
+            <div class="faq-answer faq-wide">
+              <table class="data-map tool-catalog">
+                <caption class="sr">Proposed tools, backing systems and permitted results</caption>
+                <thead><tr><th>Backing system</th><th>Named tool</th><th>What comes back</th></tr></thead>
+                <tbody>
+                  <tr><th>Legacy scheduling app</th><td><code>get_schedule_sample</code></td>
+                    <td>Booking, hall, screening time, master deadline and delivery status for the authorized festival.</td></tr>
+                  <tr><th>Database catalog</th><td><code>describe_app_schema</code></td>
+                    <td>Phase 1 reads field names and types from the pinned schema for the app-owned store.</td></tr>
+                  <tr><th>Portfolio database</th><td><code>get_catalog_entry</code></td>
+                    <td>An optional database adapter reads an approved view by project ID
+                      and returns the title and phase of one authorized portfolio entry.</td></tr>
+                  <tr><th>External partner API</th><td><code>get_delivery_status</code></td>
+                    <td>For a future logistics app, the contracted carrier returns status and
+                      update time for one authorized shipment reference.</td></tr>
+                  <tr><th>Internal knowledge base</th><td><code>search_project_guidance</code></td>
+                    <td>Phase 1 retrieves a named, versioned starter document and cites the allowed excerpt.</td></tr>
+                  <tr><th>Custom ERP integration</th><td><code>get_erp_ticket_fixture</code></td>
+                    <td>A synthetic work order matching the approved ERP contract for development.</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </details>
+          <details id="faq-postgresql" class="tech">
+            <summary>Why use PostgreSQL for orchestrator state and dispatch?</summary>
+            <div class="faq-answer">
+              <p>
+                  The factory already needs to remember approved scope, revisions
+                and checkpoints. With pg-boss it can save a checkpoint and queue
+                the next job in one PostgreSQL transaction. If that transaction
+                fails, neither write takes effect. That keeps a crash from leaving
+                a task marked ready with no job to run.
+              </p>
+              <p>
+                The beta team operates one shared store for state and dispatch. A
+                database outage therefore pauses both. GitHub writes happen
+                outside this transaction, which is why the broker checks for an
+                existing pull request before retrying. The generated app can use
+                its own database.
+                <a href="https://pgboss.io/api/adapters"
+                  >pg-boss transaction documentation</a
+                >
+              </p>
+            </div>
+          </details>
+        </div>
+        <section id="deployment-faq" class="tech technical-section" aria-labelledby="deployment-faq-heading">
+          <h3 id="deployment-faq-heading">Deployment troubleshooting</h3>
+          <div class="faq-list">
+            <details id="faq-the-first-build-is-queued-why-hasn-t-a-sandbox-started">
+              <summary>The first build is queued. Why hasn’t a sandbox started?</summary>
+              <div class="faq-answer">
+                The platform engineer checks the dispatch lease. If the orchestrator claimed
+                the run, inspect the sandbox creation error. For a quota error, check
+                available cores in the region. For an access denial, check the
+                orchestrator identity’s role on the sandbox group. After the fix,
+                run one synthetic build and verify sandbox cleanup before
+                releasing queued work. <a href="https://sandboxes.azure.com/docs/sandboxes/limits">Sandbox quotas</a>
+              </div>
+            </details>
+            <details id="faq-the-sandbox-starts-why-does-the-first-model-request-time-out">
+              <summary>The sandbox starts. Why does the first model request time out?</summary>
+              <div class="faq-answer">
+                The platform engineer checks whether the request reached the model
+                gateway. If it did, resolve the Foundry hostname from the gateway’s
+                network and compare the result with the approved private endpoint IP.
+                If it didn’t, check the sandbox route to the gateway. Resume generation
+                after a synthetic prompt succeeds over the private path.
+                <a href="https://learn.microsoft.com/en-us/troubleshoot/azure/private-link/troubleshoot-private-endpoint-connectivity-failure">Private endpoint diagnostics</a>
+              </div>
+            </details>
+            <details id="faq-why-does-the-erp-lookup-pass-tests-but-return-403-in-staging">
+              <summary>Why does the ERP lookup pass tests but return 403 in staging?</summary>
+              <div class="faq-answer">
+                The independent tests use a fixture. The app owner traces the staging
+                request to see whether the connector or the ERP denied it. With the
+                ERP owner, check the app’s runtime identity, the coordinator’s hall
+                assignment and the approved ticket fields. Accept the integration
+                when Hall B succeeds for its coordinator and another hall still denies access.
+              </div>
+            </details>
+            <details id="faq-the-image-was-published-why-is-the-new-revision-still-unready">
+              <summary>The image was published. Why is the new revision still unready?</summary>
+              <div class="faq-answer">
+                The release owner checks the failing Container Apps revision’s system
+                logs. For an image pull failure, verify the registry digest and pull
+                identity. If the container started, check its console logs, listening
+                port and readiness probe. Keep traffic on the healthy revision until
+                the staged image passes readiness and the staff smoke test.
+                <a href="https://learn.microsoft.com/en-us/azure/container-apps/troubleshoot-deployment-errors">Container Apps deployment diagnostics</a>
+              </div>
+            </details>
+            <details id="faq-is-rollback-safe-if-the-canary-fails-after-a-database-migration">
+              <summary>Is rollback safe if the canary fails after a database migration?</summary>
+              <div class="faq-answer">
+                The release owner stops promotion. The database owner checks whether
+                the previous app revision can still read and write the migrated schema.
+                If compatible, return traffic to that revision and verify a saved
+                handoff note. Otherwise, pause affected writes and use the rehearsed
+                repair or restore procedure, accounting for notes saved since the migration.
+              </div>
+            </details>
+          </div>
+        </section>
+      </section>
+    </main>
+    <footer class="shell">Software Factory on Azure · <a href="https://github.com/carlosan1708/software-factory-proposal">Source repository</a></footer>
+    <script>
+      (() => {
+        const modes = Array.from(
+          document.querySelectorAll('input[name="mode"]'),
+        );
+        function applyLocationMode() {
+          const url = new URL(location.href);
+          const technical =
+            url.pathname.replace(/\/$/, "") === "/technical" ||
+            url.searchParams.get("mode") === "technical";
+          document.getElementById(
+            technical ? "technical" : "executive",
+          ).checked = true;
+        }
+        applyLocationMode();
+        if (location.pathname === "/technical/") {
+          for (const link of document.querySelectorAll(".download-pdf"))
+            link.href = "/" + link.getAttribute("href");
+        }
+        if (location.protocol === "https:" || location.protocol === "http:") {
+          window.addEventListener("popstate", applyLocationMode);
+        }
+        let closedForPrint = [];
+        window.addEventListener("beforeprint", () => {
+          closedForPrint = Array.from(document.querySelectorAll("#faq details:not([open])"));
+          closedForPrint.forEach((question) => { question.open = true; });
+        });
+        window.addEventListener("afterprint", () => {
+          closedForPrint.forEach((question) => { question.open = false; });
+          closedForPrint = [];
+        });
+        modes.forEach((input) =>
+          input.addEventListener("change", () => {
+            if (
+              location.protocol === "https:" ||
+              location.protocol === "http:"
+            ) {
+              const next = new URL(location.href);
+              next.searchParams.delete("mode");
+              next.pathname = input.value === "technical" ? "/technical" : "/";
+              const anchor = document.getElementById(next.hash.slice(1));
+              if (input.value === "executive" && anchor?.closest(".tech"))
+                next.hash = anchor.closest(".section[id]")?.id || "";
+              history.pushState(null, "", next);
+            }
+          }),
+        );
+
+        const showcase = document.querySelector(".showcase");
+        const scene = showcase.querySelector(".run-scene");
+        const pause = scene.querySelector(".pause-run");
+        const previous = scene.querySelector(".prev-step");
+        const nextStep = scene.querySelector(".next-step");
+        const caseInputs = Array.from(
+          showcase.querySelectorAll('input[name="scenario"]'),
+        );
+        const notes = Array.from(showcase.querySelectorAll(".case-notes"));
+        const motion = matchMedia("(prefers-reduced-motion: reduce)");
+        const actorIcons = { "Claude Code": "agent", "Discovery subagent": "agent", "Custom ERP": "erp" };
+        const iconPaths = {
+          person:
+            '<circle cx="14" cy="8" r="4"/><path d="M5 24v-2c0-5 4-8 9-8s9 3 9 8v2z"/>',
+          agent:
+            '<rect x="4" y="7" width="20" height="16" rx="4"/><path d="M14 3v4 M9 13h1 M18 13h1 M10 18h8"/>',
+          docs: '<path d="M5 3h13l4 4v15H5z M9 10h9 M9 14h8 M9 18h5 M23 10h2v16H8"/>',
+          legacy:
+            '<rect x="3" y="3" width="22" height="16" rx="2"/><path d="M5 23h18 M10 19v4 M18 19v4 M8 9l3 3-3 3 M14 15h5"/>',
+          db: '<ellipse cx="14" cy="6" rx="9" ry="3"/><path d="M5 6v15c0 4 18 4 18 0V6 M5 13c0 4 18 4 18 0"/>',
+          code: '<rect x="2" y="4" width="24" height="20" rx="3"/><path d="m10 10-4 4 4 4 M18 10l4 4-4 4 M16 9l-4 10"/>',
+          check:
+            '<path d="M14 2l10 4v8c0 5-5 9-10 12-5-3-10-7-10-12V6z M8 13l4 4 8-9"/>',
+          cloud:
+            '<path d="M8 22a6 6 0 0 1-1-12 8 8 0 0 1 15-1 7 7 0 0 1-1 13 M14 23V12 M10 16l4-4 4 4"/>',
+          erp: '<rect x="3" y="3" width="22" height="22" rx="2"/><path d="M3 9h22 M8 14h3 M15 14h5 M8 19h3 M15 19h5"/>',
+        };
+        let selected = "",
+          frames = [],
+          index = 0;
+        let paused = motion.matches,
+          inView = !("IntersectionObserver" in window);
+        let timer = null,
+          scheduledAt = 0,
+          remaining = 0;
+        function stopClock() {
+          if (timer !== null) {
+            clearTimeout(timer);
+            remaining = Math.max(
+              0,
+              remaining - (performance.now() - scheduledAt),
+            );
+            timer = null;
+          }
+        }
+        function syncClock() {
+          stopClock();
+          scene.classList.toggle("offscreen", !inView || document.hidden);
+          scene.classList.toggle("is-paused", paused);
+          pause.querySelector("span").textContent = paused ? "Resume" : "Pause";
+          pause.setAttribute(
+            "aria-label",
+            paused ? "Resume walkthrough" : "Pause walkthrough",
+          );
+          if (paused || !inView || document.hidden) return;
+          scheduledAt = performance.now();
+          timer = setTimeout(() => {
+            timer = null;
+            index = (index + 1) % frames.length;
+            renderStep();
+          }, remaining);
+        }
+        function drawIcon(selector, kind) {
+          // All paths are local artwork. Each icon has an adjacent text label.
+          scene.querySelector(selector).innerHTML =
+            '<svg viewBox="0 0 28 28" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">' +
+            iconPaths[kind] +
+            "</svg>";
+        }
+        function renderStep() {
+          stopClock();
+          const frame = frames[index],
+            human = frame.dataset.human === "true";
+          const value = (cls) =>
+            frame.querySelector("." + cls).textContent.trim();
+          const write = (cls, v) => {
+            scene.querySelector(cls).textContent = v;
+          };
+          previous.disabled = index === 0;
+          nextStep.disabled = index === frames.length - 1;
+          write(".run-count", index + 1 + " / " + frames.length);
+          write(".stage-type", human ? "◆ Human decision" : "● Automated step");
+          write(".scene-title h3", value("phase-name"));
+          write(".actor-station strong", value("actor-name"));
+          const connector = frame.dataset.system;
+          const tool = scene.querySelector(".tool-station");
+          tool.classList.toggle("using-connector", Boolean(connector));
+          write(".tool-station small", connector ? "Connector · " + connector : (human ? "Decision" : "Tool"));
+          write(".tool-station strong", value("tool-name"));
+          write(".artifact b", value("output-text"));
+          write(".scene-action", value("action-text"));
+          write(".scene-detail", value("frame-detail"));
+          drawIcon(
+            ".actor-station .signal-icon",
+            human ? "person" : (actorIcons[value("actor-name")] || "code"),
+          );
+          drawIcon(
+            ".tool-station .signal-icon",
+            frame.dataset.kind === "person" ? "docs" : frame.dataset.kind,
+          );
+          scene.classList.toggle("human", human);
+          scene.dataset.scenario = selected;
+          scene.dataset.step = String(index);
+          scene.querySelectorAll(".scene-rail li").forEach((node, n) => {
+            node.classList.toggle("current", n === index);
+            node.classList.toggle("past", n < index);
+            if (n === index) node.setAttribute("aria-current", "step");
+            else node.removeAttribute("aria-current");
+          });
+          for (const node of showcase.querySelectorAll("[data-connector]")) {
+            if (node.dataset.connector === connector && node.closest(".case-notes").dataset.case === selected)
+              node.setAttribute("aria-current", "true");
+            else node.removeAttribute("aria-current");
+          }
+          remaining = index === frames.length - 1 ? 8500 : human ? 7200 : 6000;
+          syncClock();
+        }
+        function chooseCase(id) {
+          const article = notes.find((n) => n.dataset.case === id);
+          if (!article || id === selected) return;
+          stopClock();
+          selected = id;
+          index = 0;
+          caseInputs.find((input) => input.value === id).checked = true;
+          frames = Array.from(article.querySelectorAll(".transcript li"));
+          const rail = scene.querySelector(".scene-rail");
+          rail.replaceChildren(
+            ...frames.map((frame) => {
+              const li = document.createElement("li");
+              li.textContent =
+                (frame.dataset.human === "true" ? "◆ " : "● ") +
+                frame.querySelector(".phase-name").textContent;
+              return li;
+            }),
+          );
+          renderStep();
+        }
+        function restoreCase() {
+          const id = location.hash.slice(1);
+          const question = document.getElementById(id);
+          if (question?.matches("#faq details")) question.open = true;
+          const step = stepLinks.get(id);
+          if (step) {
+            paused = true;
+            chooseCase(step.caseId);
+            index = step.index;
+            renderStep();
+            scene.scrollIntoView();
+            return;
+          }
+          if (caseInputs.some((input) => input.value === id)) chooseCase(id);
+          else if (!id || !selected) chooseCase(caseInputs[0].value);
+        }
+        caseInputs.forEach((input) =>
+          input.addEventListener("change", () => {
+            chooseCase(input.value);
+            if (location.hash !== "#" + input.value) {
+              if (location.protocol === "file:") location.hash = input.value;
+              else history.pushState(null, "", "#" + input.value);
+            }
+          }),
+        );
+        function stepBy(delta) {
+          paused = true;
+          index += delta;
+          renderStep();
+          history.replaceState(null, "", "#" + selected + "-step-" + (index + 1));
+          scene.querySelector(".step-announcement").textContent =
+            "Step " + (index + 1) + " of " + frames.length + ". " + frames[index].querySelector(".phase-name").textContent;
+        }
+        previous.addEventListener("click", () => stepBy(-1));
+        nextStep.addEventListener("click", () => stepBy(1));
+        pause.addEventListener("click", () => {
+          paused = !paused;
+          syncClock();
+        });
+        scene.querySelector(".restart-run").addEventListener("click", () => {
+          index = 0;
+          renderStep();
+          history.replaceState(null, "", "#" + selected);
+        });
+        document.addEventListener("visibilitychange", syncClock);
+        motion.addEventListener("change", (event) => {
+          if (event.matches) {
+            paused = true;
+            syncClock();
+          }
+        });
+        // Index the presentation itself, including scenarios and technical text hidden in the current view.
+        const searchBox = document.querySelector(".proposal-search");
+        const query = searchBox.querySelector("input");
+        const panel = searchBox.querySelector(".search-panel");
+        const results = searchBox.querySelector("ul");
+        const status = searchBox.querySelector('[role="status"]');
+        const entries = [];
+        const stepLinks = new Map();
+        const normalize = (value) => value.toLowerCase().normalize("NFKD")
+          .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+
+        function searchableText(root, excluded) {
+          const copy = root.cloneNode(true);
+          copy.querySelectorAll(excluded).forEach((node) => node.remove());
+          const walker = document.createTreeWalker(copy, NodeFilter.SHOW_TEXT);
+          const parts = [];
+          while (walker.nextNode()) parts.push(walker.currentNode.textContent);
+          return parts.join(" ").replace(/\s+/g, " ").trim();
+        }
+        function addEntry(id, title, label, content, target, omit = "svg", aliases = "") {
+          const summary = normalize([title, label, id, aliases].join(" "));
+          const basicText = searchableText(content, omit + ", .tech");
+          const detailedText = searchableText(content, omit + ", .exec");
+          entries.push({
+            id, title, label, target, basicText, detailedText, heading: normalize(title),
+            basic: summary + " " + normalize(basicText),
+            detailed: summary + " " + normalize(detailedText),
+            technical: Boolean(content.closest(".tech")),
+          });
+        }
+        const main = document.querySelector("main");
+        for (const section of main.querySelectorAll("section[id], .technical-section[id], aside.assumptions[id]")) {
+          const heading = section.querySelector("h1, h2, h3");
+          const content = section === showcase ? section.querySelector(".showcase-head") : section;
+          addEntry(section.id, heading.textContent.trim(), "Section", content, section,
+            "svg, nav, .technical-section, .faq-list");
+        }
+        for (const question of main.querySelectorAll("#faq summary")) {
+          const title = question.textContent.trim();
+          const row = question.parentElement;
+          addEntry(row.id, title, "FAQ", row, row);
+        }
+        for (const article of notes) {
+          const caseId = article.dataset.case;
+          const title = article.querySelector("h2").textContent.trim();
+          const option = caseInputs.find((input) => input.value === caseId);
+          const aliases = searchableText(option.closest("label"), "input");
+          addEntry(caseId, title, "Scenario", article, article, ".transcript", aliases);
+          article.querySelectorAll(".transcript li").forEach((frame, i) => {
+            const id = caseId + "-step-" + (i + 1);
+            stepLinks.set(id, { caseId, index: i });
+            addEntry(id, frame.querySelector(".phase-name").textContent.trim(),
+              title + " · Step " + (i + 1), frame, scene);
+          });
+        }
+        function resultURL(entry, mode) {
+          const url = new URL(location.href);
+          const technical = mode ? mode === "Technical" : document.getElementById("technical").checked;
+          url.searchParams.delete("mode");
+          if (url.protocol === "file:") {
+            if (technical) url.searchParams.set("mode", "technical");
+          } else {
+            url.pathname = technical ? "/technical" : "/";
+          }
+          url.hash = entry.id;
+          return url;
+        }
+        function closeResults() {
+          panel.hidden = true;
+        }
+        function showResults() {
+          const phrase = normalize(query.value);
+          if (!phrase) {
+            closeResults();
+            return;
+          }
+          const terms = phrase.split(" ");
+          const matches = [];
+          for (const entry of entries) {
+            const basic = !entry.technical && terms.every((term) => entry.basic.includes(term));
+            const detailed = terms.every((term) => entry.detailed.includes(term));
+            if (!basic && !detailed) continue;
+            let mode = "";
+            if (!basic) mode = "Technical";
+            if (!detailed) mode = "Executive";
+            const score = (entry.heading.includes(phrase) ? 10 : 0)
+              + terms.filter((term) => entry.heading.includes(term)).length * 2
+              + (entry.label === "Scenario" ? 1 : 0);
+            matches.push({ entry, mode, score });
+          }
+          matches.sort((a, b) => b.score - a.score);
+          results.replaceChildren();
+          for (const { entry, mode } of matches) {
+            const item = document.createElement("li");
+            const link = document.createElement("a");
+            link.href = resultURL(entry, mode);
+            const label = document.createElement("small");
+            label.textContent = entry.label + (mode ? " · " + mode : "");
+            const title = document.createElement("strong");
+            title.textContent = entry.title;
+            link.append(label, title);
+            if (!entry.heading.includes(phrase)) {
+              const body = mode === "Technical" ? entry.detailedText : entry.basicText;
+              const at = body.toLowerCase().indexOf(terms[0]);
+              if (at >= 0) {
+                const start = at > 36 ? body.lastIndexOf(" ", at - 24) + 1 : 0;
+                const snippet = document.createElement("span");
+                snippet.className = "match-context";
+                snippet.textContent = (start ? "… " : "") + body.slice(start, start + 140);
+                link.append(snippet);
+              }
+            }
+            item.append(link);
+            results.append(item);
+          }
+          panel.scrollTop = 0;
+          panel.hidden = false;
+          status.textContent = matches.length
+            ? matches.length + (matches.length === 1 ? " result" : " results")
+            : "No matches. Try a term such as ERP or rollback.";
+        }
+        query.addEventListener("input", showResults);
+        query.addEventListener("focus", showResults);
+        query.addEventListener("click", showResults);
+        searchBox.addEventListener("focusout", (event) => {
+          if (event.relatedTarget && !searchBox.contains(event.relatedTarget)) closeResults();
+        });
+        document.addEventListener("pointerdown", (event) => {
+          if (!searchBox.contains(event.target)) closeResults();
+        });
+        searchBox.addEventListener("keydown", (event) => {
+          if (event.key === "Escape") {
+            event.preventDefault();
+            query.focus();
+            closeResults();
+            return;
+          }
+          const links = Array.from(results.querySelectorAll("a"));
+          if (panel.hidden || !links.length) return;
+          if (event.key === "Enter" && event.target === query) {
+            event.preventDefault();
+            links[0].click();
+          } else if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            const next = links.indexOf(event.target) + (event.key === "ArrowDown" ? 1 : -1);
+            (links[next] || (next < 0 ? query : links[0])).focus();
+          }
+        });
+        results.addEventListener("click", (event) => {
+          const link = event.target.closest("a");
+          if (!link || event.button || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+          const url = new URL(link.href);
+          closeResults();
+          if (url.protocol === "file:" && url.search !== location.search) return;
+          event.preventDefault();
+          if (url.href !== location.href) history.pushState(null, "", url);
+          applyLocationMode();
+          restoreCase();
+          const entry = entries.find((item) => item.id === url.hash.slice(1));
+          const target = entry.target;
+          target.tabIndex = -1;
+          target.focus({ preventScroll: true });
+          target.scrollIntoView();
+        });
+        searchBox.hidden = false;
+        window.addEventListener("hashchange", restoreCase);
+        window.addEventListener("popstate", restoreCase);
+        scene.hidden = false;
+        showcase.classList.add("ready");
+        restoreCase();
+        if ("IntersectionObserver" in window) {
+          const observer = new IntersectionObserver(
+            (entries) => {
+              inView = entries[0].isIntersecting;
+              syncClock();
+            },
+            { threshold: 0 },
+          );
+          observer.observe(scene);
+        }
+      })();
+    </script>
+  </body>
+</html>
