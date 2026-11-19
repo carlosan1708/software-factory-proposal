@@ -2,7 +2,7 @@
 
 This design brief describes the interactive architecture proposal for engineering and product teams. The page supports both a short walkthrough and independent reading.
 
-Display the author byline Carlos Andres Rodriguez Trigueros with the supplied LinkedIn and GitHub profile links in the header.
+Display the author byline Carlos Andres Rodriguez Trigueros with LinkedIn, GitHub profile and Source repository links in the header. The Source repository link opens the public proposal repository.
 
 ## Reading modes
 
